@@ -1,0 +1,46 @@
+{
+  "timetable": "시간표",
+  "time": "시간",
+  "monday": "월요일",
+  "tuesday": "화요일",
+  "wednesday": "수요일",
+  "thursday": "목요일",
+  "friday": "금요일",
+  "saturday": "토요일",
+  "sunday": "일요일",
+  "timeFormat": "{{start}}시~{{end}}시",
+  "backToHome": "홈으로 돌아가기",
+  "nav": {
+    "home": "홈",
+    "timetable": "시간표",
+    "about": "소개"
+  },
+  "logo": {
+    "alt": "로고"
+  },
+  "home": {
+    "title": "순공 타이머",
+    "version": "v0.1",
+    "learnReact": "React 배우기",
+    "testApi": "서버 연결 테스트"
+  },
+  "error": {
+    "pageNotFound": "페이지를 찾을 수 없습니다"
+  },
+  "about": {
+    "title": "순공 타이머 소개",
+    "introduction": {
+      "title": "프로젝트 소개",
+      "description": "순공 타이머는 학생들의 효율적인 학습 시간 관리를 돕기 위해 개발된 웹 애플리케이션입니다."
+    },
+    "features": {
+      "title": "주요 기능",
+      "timetable": "시간표 관리",
+      "timer": "학습 시간 측정",
+      "multilingual": "다국어 지원 (한국어/영어)"
+    },
+    "version": {
+      "title": "버전 정보"
+    }
+  }
+}

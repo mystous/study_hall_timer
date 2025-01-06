@@ -1,0 +1,46 @@
+{
+  "timetable": "Time Table",
+  "time": "Time",
+  "monday": "Monday",
+  "tuesday": "Tuesday",
+  "wednesday": "Wednesday",
+  "thursday": "Thursday",
+  "friday": "Friday",
+  "saturday": "Saturday",
+  "sunday": "Sunday",
+  "timeFormat": "{{start}}-{{end}}",
+  "backToHome": "Back to Home",
+  "nav": {
+    "home": "Home",
+    "timetable": "Time Table",
+    "about": "About"
+  },
+  "logo": {
+    "alt": "logo"
+  },
+  "home": {
+    "title": "Study Hall Timer",
+    "version": "v0.1",
+    "learnReact": "Learn React",
+    "testApi": "Test API Connection"
+  },
+  "error": {
+    "pageNotFound": "Page Not Found"
+  },
+  "about": {
+    "title": "Study Hall Timer Introduction",
+    "introduction": {
+      "title": "Project Introduction",
+      "description": "Study Hall Timer is a web application developed to help students manage their study time efficiently."
+    },
+    "features": {
+      "title": "Key Features",
+      "timetable": "Time Table Management",
+      "timer": "Study Time Tracking",
+      "multilingual": "Multi-language Support (Korean/English)"
+    },
+    "version": {
+      "title": "Version Information"
+    }
+  }
+}

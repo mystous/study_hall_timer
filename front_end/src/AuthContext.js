@@ -4,18 +4,19 @@ export const AuthContext = createContext(null);
 
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
-  //const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [isAuthenticated, setIsAuthenticated] = useState(true);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  //const [isAuthenticated, setIsAuthenticated] = useState(true);
 
-  const login = async (email, password) => {
+  const login = async (username, password) => {
     try {
+      
       // API 호출 예시
-      const response = await fetch('http://studyhalltimer.com:3000/api/v1/login', {
+      const response = await fetch('http://studyhalltimer.com:9090/api/v1/login', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ email, password }),
+        body: JSON.stringify({ username, password }),
       });
 
       if (!response.ok) {
@@ -26,6 +27,7 @@ export const AuthProvider = ({ children }) => {
       setUser(data.user);
       setIsAuthenticated(true);
       localStorage.setItem('token', data.token);
+      console.log(data.token);
     } catch (error) {
       throw error;
     }

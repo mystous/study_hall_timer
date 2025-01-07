@@ -75,7 +75,8 @@
   "login": {
     "username": "아이디: ",
     "password": "비밀번호: ",
-    "login": "로그인"
+    "login": "로그인",
+    "error": "로그인 실패"
   },
   "logout": {
     "loggingOut": "로그아웃 되었습니다."

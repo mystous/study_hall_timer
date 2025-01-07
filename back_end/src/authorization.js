@@ -7,7 +7,7 @@ const passwordManager = (() => {
     };
 
     // 비밀번호 해싱 함수
-    const hashPassword = (password, salt) => {
+    const hashPassword = async (password, salt) => {
         return new Promise((resolve, reject) => {
             crypto.pbkdf2(password, salt, 10000, 64, 'sha512', (err, derivedKey) => {
                 if (err) reject(err);
@@ -31,7 +31,10 @@ const passwordManager = (() => {
         verifyPassword: async (password, hash, salt) => {
             const newHash = await hashPassword(password, salt);
             return newHash === hash;
-        }
+        },
+        
+        // hashPassword 함수도 외부에서 사용할 수 있도록 노출
+        hashPassword
     };
 })();
 

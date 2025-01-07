@@ -52,7 +52,8 @@
   "login": {
     "username": "Username: ",
     "password": "Password: ",
-    "login": "Login"
+    "login": "Login",
+    "error": "Login failed"
   },
   "logout": {
     "loggingOut": "Logged out successfully."

@@ -13,10 +13,6 @@ const Logout = () => {
     navigate('/');
   }, [logout, navigate]);
 
-  useEffect(() => {
-    alert(t('logout.loggingOut'));
-  }, []);
-
   return (
     <div className="App-header">
       <h2>{t('logout.loggingOut')}</h2>

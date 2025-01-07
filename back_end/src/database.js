@@ -28,7 +28,40 @@ async function testConnection() {
     }
 }
 
+// User 모델 정의
+const User = sequelize.define('user_info', {
+    username: {
+        type: Sequelize.STRING,
+        allowNull: false,
+        unique: true
+    },
+    salt: {
+        type: Sequelize.STRING,
+        allowNull: false
+    }
+}, {
+    tableName: 'user_info',
+    timestamps: false
+});
+
+// 사용자의 salt 값을 조회하는 함수
+async function getUserSalt(username) {
+    try {
+        const user = await User.findOne({
+            attributes: ['salt'],
+            where: {
+                username: username
+            }
+        });
+        return user ? user.salt : null;
+    } catch (error) {
+        console.error('Error fetching user salt:', error);
+        throw error;
+    }
+}
+
 module.exports = {
     sequelize,
-    testConnection
+    testConnection,
+    getUserSalt
 };

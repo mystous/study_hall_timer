@@ -2,17 +2,20 @@ import React, { useState, useContext } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { AuthContext } from './AuthContext';
 import { useTranslation } from 'react-i18next';
+import './css/Login.css';
+
 function Login() {
-  const [email, setEmail] = useState('');
+  const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const navigate = useNavigate();
-  const { login } = useContext(AuthContext);
   const { t } = useTranslation();
+  const { login } = useContext(AuthContext);
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      await login(email, password);
+      await login(username, password);
       navigate('/'); // 로그인 성공 시 홈으로 이동
     } catch (err) {
       setError(t('login.error'));
@@ -27,9 +30,9 @@ function Login() {
         <div>
           <label>{t('login.username')}</label>
           <input
-            type="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
+            type="username"
+            value={username}
+            onChange={(e) => setUsername(e.target.value)}
             required
           />
         </div>

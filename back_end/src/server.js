@@ -5,6 +5,9 @@ const cors = require('cors');
 const app = express();
 const port = process.env.PORT || 9090; // 환경변수에서 포트를 가져오거나 기본값 사용
 const db = require('./database');
+const passwordManager = require('./authorization');
+const jwt = require('jsonwebtoken');
+
 
 // (1) JSON 파싱 및 기본 설정
 app.use(express.json());
@@ -41,49 +44,46 @@ app.listen(port, () => {
   console.log(`Server is running on http://localhost:${port}`);
 });
 
-const passwordManager = require('./authorization');
+// JWT 시크릿 키 설정 (환경변수에서 가져오거나 기본값 사용)
+const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key';
 
 // 로그인 API 엔드포인트
 app.post('/api/v1/login', async (req, res) => {
   try {
     const { username, password } = req.body;
+    const salt = await db.getUserSalt(username);
 
-    console.log(username, password);
-
-    // TODO: 실제 데이터베이스에서 사용자 정보 조회 로직 구현 필요
-    // 임시 테스트용 사용자 정보
-    const mockUserData = {
-      username: 'user',
-      passwordHash: '5e884898da28047151d0e56f8dc6292773603d0d6aabbdd62a11ef721d1542d8', // "password"의 해시값
-      salt: 'testsalt'
-    };
-
-    if (username !== mockUserData.username) {
+    if (!salt) {
       return res.status(401).json({ 
         success: false, 
-        message: '사용자를 찾을 수 없습니다.' 
+        message: 'Cannot find user.' 
       });
     }
 
-    const isValid = await passwordManager.verifyPassword(
-      password,
-      mockUserData.passwordHash,
-      mockUserData.salt
-    );
+    const hashedPassword = await passwordManager.hashPassword(password, salt);
+    const isValid = await passwordManager.verifyPassword(password, hashedPassword, salt);
 
     if (!isValid) {
       return res.status(401).json({ 
         success: false, 
-        message: '비밀번호가 일치하지 않습니다.' 
+        message: 'Password does not match.' 
       });
     }
 
-    // 로그인 성공
+    // JWT 토큰 생성
+    const token = jwt.sign(
+      { username: username },
+      JWT_SECRET,
+      { expiresIn: '24h' } // 토큰 유효기간 24시간
+    );
+
+    // 로그인 성공 및 토큰 전달
     res.json({ 
       success: true,
-      message: '로그인 성공',
+      message: 'Login successful',
+      token: token,
       user: {
-        username: mockUserData.username
+        username: username
         // 필요한 경우 추가 사용자 정보
       }
     });
@@ -92,7 +92,7 @@ app.post('/api/v1/login', async (req, res) => {
     console.error('Login error:', error);
     res.status(500).json({ 
       success: false, 
-      message: '서버 오류가 발생했습니다.' 
+      message: 'Server error occurred.' 
     });
   }
 });

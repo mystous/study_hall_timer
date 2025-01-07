@@ -13,7 +13,11 @@
   "nav": {
     "home": "홈",
     "timetable": "시간표",
-    "about": "소개"
+    "statistics": "총공 시간 보기",
+    "personalinfo": "사용자 정보",
+    "about": "소개",
+    "login": "로그인",
+    "logout": "로그아웃"
   },
   "logo": {
     "alt": "로고"
@@ -42,5 +46,38 @@
     "version": {
       "title": "버전 정보"
     }
+  },
+  "statistics": {
+    "title": "학습 통계",
+    "timeRange": {
+      "daily": "일간",
+      "weekly": "주간",
+      "monthly": "월간",
+      "apply": "적용"
+    },
+    "summary": {
+      "today": "오늘 총 공부시간",
+      "thisWeek": "이번 주 총 공부시간",
+      "thisMonth": "이번 달 총 공부시간",
+      "hours": "시간"
+    },
+    "detail": {
+      "bySubject": "과목별 학습시간",
+      "subjects": {
+        "math": "수학",
+        "english": "영어",
+        "science": "과학"
+      }
+    }
+  },
+  "startTime": "시작 시간",
+  "endTime": "종료 시간",
+  "login": {
+    "username": "아이디: ",
+    "password": "비밀번호: ",
+    "login": "로그인"
+  },
+  "logout": {
+    "loggingOut": "로그아웃 되었습니다."
   }
 }

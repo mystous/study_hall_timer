@@ -13,7 +13,11 @@
   "nav": {
     "home": "Home",
     "timetable": "Time Table",
-    "about": "About"
+    "statistics": "Study Hall Time Statistics",
+    "personalinfo": "Personal Info",
+    "about": "About",
+    "login": "Login",
+    "logout": "Logout"
   },
   "logo": {
     "alt": "logo"
@@ -42,5 +46,15 @@
     "version": {
       "title": "Version Information"
     }
+  },
+  "startTime": "Start Time",
+  "endTime": "End Time",
+  "login": {
+    "username": "Username: ",
+    "password": "Password: ",
+    "login": "Login"
+  },
+  "logout": {
+    "loggingOut": "Logged out successfully."
   }
 }

@@ -1,25 +1,34 @@
 require('dotenv').config();
-const mariadb = require('mariadb');
+const { Sequelize } = require('sequelize');
 
-const pool = mariadb.createPool({
-    host: process.env.DB_HOST,
-    user: process.env.DB_USER,
-    password: process.env.DB_PASSWORD,
-    database: process.env.DB_DATABASE,
-    connectionLimit: 5
-});
+const sequelize = new Sequelize(
+    process.env.DB_DATABASE,
+    process.env.DB_USER,
+    process.env.DB_PASSWORD,
+    {
+        host: process.env.DB_HOST,
+        dialect: 'mariadb',
+        pool: {
+            max: 5,
+            min: 0,
+            acquire: 30000,
+            idle: 10000
+        }
+    }
+);
 
-// 데이터베이스 연결 함수
-async function getConnection() {
+// 데이터베이스 연결 테스트 함수
+async function testConnection() {
     try {
-        const connection = await pool.getConnection();
-        return connection;
+        await sequelize.authenticate();
+        console.log('Database connection has been established successfully.');
     } catch (err) {
-        console.error('Database connection error:', err);
+        console.error('Unable to connect to the database:', err);
         throw err;
     }
 }
 
 module.exports = {
-    getConnection
+    sequelize,
+    testConnection
 };

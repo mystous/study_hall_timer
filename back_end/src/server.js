@@ -40,3 +40,63 @@ app.get('/api/v1/test', (req, res) => {
 app.listen(port, () => {
   console.log(`Server is running on http://localhost:${port}`);
 });
+
+const passwordManager = require('./authorization');
+
+// 로그인 API 엔드포인트
+app.post('/api/v1/login', async (req, res) => {
+  try {
+    const { username, password } = req.body;
+
+    console.log(username, password);
+
+    // TODO: 실제 데이터베이스에서 사용자 정보 조회 로직 구현 필요
+    // 임시 테스트용 사용자 정보
+    const mockUserData = {
+      username: 'user',
+      passwordHash: '5e884898da28047151d0e56f8dc6292773603d0d6aabbdd62a11ef721d1542d8', // "password"의 해시값
+      salt: 'testsalt'
+    };
+
+    if (username !== mockUserData.username) {
+      return res.status(401).json({ 
+        success: false, 
+        message: '사용자를 찾을 수 없습니다.' 
+      });
+    }
+
+    const isValid = await passwordManager.verifyPassword(
+      password,
+      mockUserData.passwordHash,
+      mockUserData.salt
+    );
+
+    if (!isValid) {
+      return res.status(401).json({ 
+        success: false, 
+        message: '비밀번호가 일치하지 않습니다.' 
+      });
+    }
+
+    // 로그인 성공
+    res.json({ 
+      success: true,
+      message: '로그인 성공',
+      user: {
+        username: mockUserData.username
+        // 필요한 경우 추가 사용자 정보
+      }
+    });
+
+  } catch (error) {
+    console.error('Login error:', error);
+    res.status(500).json({ 
+      success: false, 
+      message: '서버 오류가 발생했습니다.' 
+    });
+  }
+});
+
+
+
+db.testConnection();

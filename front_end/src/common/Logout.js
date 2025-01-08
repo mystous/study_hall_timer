@@ -2,16 +2,18 @@ import React, { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from './AuthContext';
 import { useTranslation } from 'react-i18next';
+import { showToastOnce } from './utils';
 
 const Logout = () => {
   const { logout } = useAuth();
   const navigate = useNavigate();
   const { t } = useTranslation();
 
+
   useEffect(() => {
     logout();
-    navigate('/');
-  }, [logout, navigate]);
+    showToastOnce(t('logout.success'));
+  }, [logout, navigate, t]);
 
   return (
     <div className="App-header">

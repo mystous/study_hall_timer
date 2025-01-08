@@ -79,6 +79,14 @@
     "error": "로그인 실패"
   },
   "logout": {
-    "loggingOut": "로그아웃 되었습니다."
+    "loggingOut": "로그아웃 되었습니다.",
+    "success": "로그아웃 되었습니다."
+  },
+  "personalInfo": {
+    "title": "개인 정보",
+    "id": "아이디",
+    "join_group": "가입 그룹",
+    "edit": "수정",
+    "save": "저장"
   }
 }

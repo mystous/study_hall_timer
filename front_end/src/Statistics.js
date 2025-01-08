@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
-import './Statistics.css';
+import './css/Statistics.css';
 
 const Statistics = () => {
   const { t } = useTranslation();

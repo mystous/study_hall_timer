@@ -1,14 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import './css/PersonalInfo.css';
+import { useAuth } from './common/AuthContext';
 
 function PersonalInfo() {
   const { t } = useTranslation();
+  const { user, groups } = useAuth();
   const [userInfo, setUserInfo] = useState({
-    name: '',
-    email: '',
-    studentId: '',
-    department: ''
+    username: user.username,
+    groups: groups
   });
   const [isEditing, setIsEditing] = useState(false);
   const [message, setMessage] = useState('');
@@ -72,48 +72,16 @@ function PersonalInfo() {
 
       <form onSubmit={handleSubmit}>
         <div className="form-group">
-          <label htmlFor="name">{t('personalInfo.name', 'Name')}:</label>
-          <input
-            type="text"
-            id="name"
-            name="name"
-            value={userInfo.name}
-            onChange={handleInputChange}
-            disabled={!isEditing}
-          />
+          <label htmlFor="id">{t('personalInfo.id', 'ID')}: {userInfo.username}</label>
         </div>
 
         <div className="form-group">
-          <label htmlFor="email">{t('personalInfo.email', 'Email')}:</label>
-          <input
-            type="email"
-            id="email"
-            name="email"
-            value={userInfo.email}
-            onChange={handleInputChange}
-            disabled={!isEditing}
-          />
-        </div>
-
-        <div className="form-group">
-          <label htmlFor="studentId">{t('personalInfo.studentId', 'Student ID')}:</label>
+          <label htmlFor="join_group">{t('personalInfo.join_group', 'Join Group')}:</label>
           <input
             type="text"
-            id="studentId"
-            name="studentId"
-            value={userInfo.studentId}
-            onChange={handleInputChange}
-            disabled={!isEditing}
-          />
-        </div>
-
-        <div className="form-group">
-          <label htmlFor="department">{t('personalInfo.department', 'Department')}:</label>
-          <input
-            type="text"
-            id="department"
-            name="department"
-            value={userInfo.department}
+            id="join_group"
+            name="join_group"
+            value={userInfo.groups}
             onChange={handleInputChange}
             disabled={!isEditing}
           />

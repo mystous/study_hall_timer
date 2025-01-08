@@ -30,6 +30,11 @@ async function testConnection() {
 
 // User 모델 정의
 const User = sequelize.define('user_info', {
+    user_id: {
+        type: Sequelize.INTEGER,
+        primaryKey: true,
+        autoIncrement: true
+    },
     username: {
         type: Sequelize.STRING,
         allowNull: false,
@@ -38,30 +43,84 @@ const User = sequelize.define('user_info', {
     salt: {
         type: Sequelize.STRING,
         allowNull: false
+    },
+    password_hash: {
+        type: Sequelize.STRING,
+        allowNull: false
+    }
+}, {
+    tableName: 'user_info',
+    timestamps: false
+});
+// GroupInfo 모델 정의
+const GroupInfo = sequelize.define('group_info', {
+    group_id: {
+        type: Sequelize.INTEGER,
+        primaryKey: true,
+        autoIncrement: true
+    },
+    group_name: {
+        type: Sequelize.STRING,
+        allowNull: false
+    }
+}, {
+    tableName: 'group_info',
+    timestamps: false
+});
+
+// UserGroupInfo 모델 정의 
+const UserGroupInfo = sequelize.define('user_group_info', {
+    user_id: {
+        type: Sequelize.INTEGER,
+        allowNull: false
+    },
+    group_id: {
+        type: Sequelize.INTEGER,
+        allowNull: false
+    }
+}, {
+    tableName: 'user_group_info',
+    timestamps: false
+});
+
+// 관계 설정
+User.belongsToMany(GroupInfo, { 
+    through: UserGroupInfo,
+    foreignKey: 'user_id'
+});
+GroupInfo.belongsToMany(User, {
+    through: UserGroupInfo,
+    foreignKey: 'group_id'  
+});
+
+
+
+
+// Token 모델 정의
+const Token = sequelize.define('user_info', {
+    username: {
+        type: Sequelize.STRING,
+        allowNull: false,
+        unique: true,
+        primaryKey: true
+    },
+    access_token: {
+        type: Sequelize.STRING,
+        allowNull: true
+    },
+    refresh_token: {
+        type: Sequelize.STRING,
+        allowNull: true
     }
 }, {
     tableName: 'user_info',
     timestamps: false
 });
 
-// 사용자의 salt 값을 조회하는 함수
-async function getUserSalt(username) {
-    try {
-        const user = await User.findOne({
-            attributes: ['salt'],
-            where: {
-                username: username
-            }
-        });
-        return user ? user.salt : null;
-    } catch (error) {
-        console.error('Error fetching user salt:', error);
-        throw error;
-    }
-}
+
+
 
 module.exports = {
-    sequelize,
-    testConnection,
-    getUserSalt
+   Token, User, GroupInfo, UserGroupInfo,
+   testConnection
 };

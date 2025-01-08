@@ -4,6 +4,7 @@ export const AuthContext = createContext(null);
 
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
+  const [groups, setGroups] = useState(null);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   //const [isAuthenticated, setIsAuthenticated] = useState(true);
 
@@ -11,7 +12,7 @@ export const AuthProvider = ({ children }) => {
     try {
       
       // API 호출 예시
-      const response = await fetch('http://studyhalltimer.com:9090/api/v1/login', {
+      const response = await fetch(`${process.env.REACT_APP_BACKEND_URL}/api/v1/login`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -26,8 +27,26 @@ export const AuthProvider = ({ children }) => {
       const data = await response.json();
       setUser(data.user);
       setIsAuthenticated(true);
-      localStorage.setItem('token', data.token);
-      console.log(data.token);
+      localStorage.setItem('accessToken', data.token.accessToken);
+      localStorage.setItem('refreshToken', data.token.refreshToken);
+      // Get user's groups using access token
+      const groupResponse = await fetch(`${process.env.REACT_APP_BACKEND_URL}/api/v1/user/groups`, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${data.token.accessToken}`,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      if (!groupResponse.ok) {
+        throw new Error('Failed to fetch user groups');
+      }
+
+      const groupData = await groupResponse.json();
+      if (groupData.success) {
+        setGroups(groupData.groups);
+      }
+      
     } catch (error) {
       throw error;
     }
@@ -36,7 +55,8 @@ export const AuthProvider = ({ children }) => {
   const logout = () => {
     setUser(null);
     setIsAuthenticated(false);
-    localStorage.removeItem('token');
+    localStorage.removeItem('accessToken');
+    localStorage.removeItem('refreshToken');
   };
 
   const value = {

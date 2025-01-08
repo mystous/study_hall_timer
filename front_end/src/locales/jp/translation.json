@@ -1,0 +1,92 @@
+{
+  "timetable": "時間割",
+  "time": "時間",
+  "monday": "月曜日",
+  "tuesday": "火曜日", 
+  "wednesday": "水曜日",
+  "thursday": "木曜日",
+  "friday": "金曜日",
+  "saturday": "土曜日",
+  "sunday": "日曜日",
+  "timeFormat": "{{start}}-{{end}}",
+  "backToHome": "ホームに戻る",
+  "nav": {
+    "home": "ホーム",
+    "timetable": "時間割",
+    "statistics": "学習時間統計",
+    "personalinfo": "個人情報",
+    "about": "概要",
+    "login": "ログイン",
+    "logout": "ログアウト"
+  },
+  "logo": {
+    "alt": "ロゴ"
+  },
+  "home": {
+    "title": "学習室タイマー",
+    "version": "v0.1",
+    "learnReact": "Reactを学ぶ",
+    "testApi": "API接続テスト"
+  },
+  "error": {
+    "pageNotFound": "ページが見つかりません"
+  },
+  "about": {
+    "title": "学習室タイマーの紹介",
+    "introduction": {
+      "title": "プロジェクト紹介",
+      "description": "学習室タイマーは、学生の学習時間を効率的に管理するためのWebアプリケーションです。"
+    },
+    "features": {
+      "title": "主な機能",
+      "timetable": "時間割管理",
+      "timer": "学習時間の記録",
+      "multilingual": "多言語対応（韓国語/英語）"
+    },
+    "version": {
+      "title": "バージョン情報"
+    }
+  },
+  "statistics": {
+    "title": "学習時間統計",
+    "timeRange": {
+      "daily": "日次",
+      "weekly": "週次",
+      "monthly": "月次",
+      "apply": "適用"
+    },
+    "summary": {
+      "today": "今日の総学習時間",
+      "thisWeek": "今週の総学習時間",
+      "thisMonth": "今月の総学習時間",
+      "hours": "時間"
+    },
+    "detail": {
+      "bySubject": "科目別学習時間",
+      "subjects": {
+        "math": "数学",
+        "english": "英語",
+        "science": "理科"
+      }
+    }
+  },
+  "startTime": "開始時間",
+  "endTime": "終了時間",
+  "login": {
+    "username": "ユーザー名：",
+    "password": "パスワード：",
+    "login": "ログイン",
+    "error": "ログインに失敗しました"
+  },
+  "logout": {
+    "loggingOut": "ログアウトしました。",
+    "success": "ログアウトしました。"
+  },
+  "personalInfo": {
+    "title": "個人情報",
+    "id": "ID",
+    "join_group": "グループ参加",
+    "edit": "編集",
+    "save": "保存"
+  }
+}

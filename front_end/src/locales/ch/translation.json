@@ -1,0 +1,92 @@
+{
+    "timetable": "时间表",
+    "time": "时间",
+    "monday": "星期一", 
+    "tuesday": "星期二",
+    "wednesday": "星期三",
+    "thursday": "星期四",
+    "friday": "星期五",
+    "saturday": "星期六",
+    "sunday": "星期日",
+    "timeFormat": "{{start}}-{{end}}",
+    "backToHome": "返回主页",
+    "nav": {
+        "home": "主页",
+        "timetable": "时间表",
+        "statistics": "学习时间统计",
+        "personalinfo": "个人资料",
+        "about": "关于",
+        "login": "登录",
+        "logout": "登出"
+    },
+    "logo": {
+        "alt": "logo"
+    },
+    "home": {
+        "title": "学习大厅计时器",
+        "version": "v0.1",
+        "learnReact": "学习React",
+        "testApi": "测试API连接"
+    },
+    "error": {
+        "pageNotFound": "页面未找到"
+    },
+    "about": {
+        "title": "学习大厅计时器介绍",
+        "introduction": {
+            "title": "项目介绍",
+            "description": "学习大厅计时器是一个帮助学生高效管理学习时间的Web应用程序。"
+        },
+        "features": {
+            "title": "主要功能",
+            "timetable": "时间表管理",
+            "timer": "学习时间跟踪",
+            "multilingual": "多语言支持（韩语/英语）"
+        },
+        "version": {
+            "title": "版本信息"
+        }
+    },
+    "statistics": {
+        "title": "学习时间统计",
+        "timeRange": {
+            "daily": "每日",
+            "weekly": "每周",
+            "monthly": "每月",
+            "apply": "应用"
+        },
+        "summary": {
+            "today": "今日总学习时间",
+            "thisWeek": "本周总学习时间",
+            "thisMonth": "本月总学习时间",
+            "hours": "小时"
+        },
+        "detail": {
+            "bySubject": "按科目学习时间",
+            "subjects": {
+                "math": "数学",
+                "english": "英语",
+                "science": "科学"
+            }
+        }
+    },
+    "startTime": "开始时间",
+    "endTime": "结束时间",
+    "login": {
+        "username": "用户名：",
+        "password": "密码：",
+        "login": "登录",
+        "error": "登录失败"
+    },
+    "logout": {
+        "loggingOut": "已成功登出",
+        "success": "已成功登出"
+    },
+    "personalInfo": {
+        "title": "个人信息",
+        "id": "用户名",
+        "join_group": "加入群组",
+        "edit": "编辑",
+        "save": "保存"
+    }
+}

@@ -47,6 +47,29 @@
       "title": "Version Information"
     }
   },
+  "statistics": {
+    "title": "Study Hall Time Statistics",
+    "timeRange": {
+      "daily": "Daily",
+      "weekly": "Weekly",
+      "monthly": "Monthly",
+      "apply": "Apply"
+    },
+    "summary": {
+      "today": "Total Study Time Today",
+      "thisWeek": "Total Study Time This Week",
+      "thisMonth": "Total Study Time This Month",
+      "hours": "Hours"
+    },
+    "detail": {
+      "bySubject": "Study Time by Subject",
+      "subjects": {
+        "math": "Math",
+        "english": "English",
+        "science": "Science"
+      }
+    }
+  },
   "startTime": "Start Time",
   "endTime": "End Time",
   "login": {
@@ -56,6 +79,14 @@
     "error": "Login failed"
   },
   "logout": {
-    "loggingOut": "Logged out successfully."
+    "loggingOut": "Logged out successfully.",
+    "success": "Logged out successfully."
+  },
+  "personalInfo": {
+    "title": "Personal Information",
+    "id": "ID",
+    "join_group": "Join Group",
+    "edit": "Edit",
+    "save": "Save"
   }
 }

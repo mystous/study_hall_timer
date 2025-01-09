@@ -10,6 +10,7 @@
   "sunday": "일요일",
   "timeFormat": "{{start}}시~{{end}}시",
   "backToHome": "홈으로 돌아가기",
+  "update": "계획 업데이트",
   "nav": {
     "home": "홈",
     "timetable": "시간표",
@@ -17,7 +18,8 @@
     "personalinfo": "사용자 정보",
     "about": "소개",
     "login": "로그인",
-    "logout": "로그아웃"
+    "logout": "로그아웃",
+    "admin": "관리자용 페이지"
   },
   "logo": {
     "alt": "로고"

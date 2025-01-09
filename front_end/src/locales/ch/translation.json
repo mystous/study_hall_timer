@@ -1,7 +1,7 @@
 {
     "timetable": "时间表",
     "time": "时间",
-    "monday": "星期一", 
+    "monday": "星期一",
     "tuesday": "星期二",
     "wednesday": "星期三",
     "thursday": "星期四",
@@ -10,6 +10,7 @@
     "sunday": "星期日",
     "timeFormat": "{{start}}-{{end}}",
     "backToHome": "返回主页",
+    "update": "更新计划",
     "nav": {
         "home": "主页",
         "timetable": "时间表",
@@ -17,7 +18,8 @@
         "personalinfo": "个人资料",
         "about": "关于",
         "login": "登录",
-        "logout": "登出"
+        "logout": "登出",
+        "admin": "管理员页面"
     },
     "logo": {
         "alt": "logo"

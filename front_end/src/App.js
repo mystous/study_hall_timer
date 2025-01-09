@@ -7,14 +7,15 @@ import About from './About';
 import PersonalInfo from './PersonalInfo';
 import Statistics from './Statistics';
 import { Routes, Route, useNavigate } from 'react-router-dom';
-import Login from './Login';
+import Login from './common/Login';
 import { AuthProvider } from './common/AuthContext';
 import ProtectedRoute from './common/ProtectedRoute';
 import { useAuth } from './common/AuthContext';
 import Logout from './common/Logout';
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
-
+import { isAdmin } from './common/utils';
+import Admin from './Admin';
 function App() {
   const navigate = useNavigate();
   const { t, i18n } = useTranslation();
@@ -43,7 +44,9 @@ function App() {
                     <li onClick={() => navigate('/personalinfo')}>{t('nav.personalinfo')}</li>
                 </>
             )}
-          
+            {isAdmin() && (
+                <li onClick={() => navigate('/admin')}>{t('nav.admin')}</li>
+            )}
 
             {isAuthenticated && (
                 <li onClick={() => navigate('/logout')}>{t('nav.logout')}</li>
@@ -130,6 +133,11 @@ function App() {
             <Route path="/personalinfo" element={
                 <ProtectedRoute>
                     <PersonalInfo />
+                </ProtectedRoute>
+            } />
+            <Route path="/admin" element={
+                <ProtectedRoute>
+                    <Admin />
                 </ProtectedRoute>
             } />
             <Route path="/logout" element={

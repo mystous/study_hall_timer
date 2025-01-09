@@ -10,6 +10,7 @@
   "sunday": "Sunday",
   "timeFormat": "{{start}}-{{end}}",
   "backToHome": "Back to Home",
+  "update": "Update Plan",
   "nav": {
     "home": "Home",
     "timetable": "Time Table",
@@ -17,7 +18,8 @@
     "personalinfo": "Personal Info",
     "about": "About",
     "login": "Login",
-    "logout": "Logout"
+    "logout": "Logout",
+    "admin": "Admin Page"
   },
   "logo": {
     "alt": "logo"

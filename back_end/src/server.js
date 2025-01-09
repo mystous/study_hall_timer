@@ -47,7 +47,7 @@ app.listen(port, () => {
 });
 
 // 사용자의 그룹 정보를 조회하는 API 엔드포인트
-app.get('/api/v1/user/groups', async (req, res) => {
+app.get('/api/v1/user/user_groups', async (req, res) => {
     try {
         // Authorization 헤더에서 토큰 추출
         const authHeader = req.headers.authorization;
@@ -196,6 +196,153 @@ app.post('/api/v1/login', async (req, res) => {
   }
 });
 
+// Admin routes
+app.post('/api/v1/admin/users', async (req, res) => {
+  try {
+    const users = await db.getUsers();
+    log.addLog({
+      action: 'get_users',
+      username: req.body.username,
+      ip: req.ip,
+      userAgent: req.headers['user-agent'], 
+      location: req.headers['origin'] || 'unknown',
+      method: req.method,
+      path: req.path,
+      protocol: req.protocol,
+      success: true,
+      statusCode: res.statusCode,
+      responseTime: process.hrtime(),
+      sessionID: req.sessionID || 'no-session'
+    });
+
+    res.json({
+      success: true,
+      users: users
+    });
+
+  } catch (error) {
+    console.error('Error getting users:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Server error occurred.'
+    });
+  }
+});
+
+app.post('/api/v1/admin/groups', async (req, res) => {
+  try {
+    const groups = await db.getGroups();
+    log.addLog({
+      action: 'get_groups', 
+      username: req.body.username,
+      ip: req.ip,
+      userAgent: req.headers['user-agent'],
+      location: req.headers['origin'] || 'unknown', 
+      method: req.method,
+      path: req.path,
+      protocol: req.protocol,
+      success: true,
+      statusCode: res.statusCode,
+      responseTime: process.hrtime(),
+      sessionID: req.sessionID || 'no-session'
+    });
+
+    res.json({
+      success: true,
+      groups: groups
+    });
+
+  } catch (error) {
+    console.error('Error getting groups:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Server error occurred.'
+    });
+  }
+});
+
+app.post('/api/v1/admin/groups/:groupId/members', async (req, res) => {
+  try {
+    console.log(req.body.username);
+    const groupId = req.params.groupId;
+    console.log(groupId);
+    const members = await db.getGroupMembers(groupId);
+    console.log(members);
+    log.addLog({
+      action: 'get_group_members',
+      username: req.body.username,
+      ip: req.ip,
+      userAgent: req.headers['user-agent'],
+      location: req.headers['origin'] || 'unknown',
+      method: req.method,
+      path: req.path,
+      protocol: req.protocol,
+      success: true,
+      statusCode: res.statusCode,
+      responseTime: process.hrtime(),
+      sessionID: req.sessionID || 'no-session'
+    });
+
+    res.json({
+      success: true,
+      members: members
+    });
+
+  } catch (error) {
+    console.error('Error getting group members:', error);
+    res.status(500).json({
+      success: false, 
+      message: 'Server error occurred.'
+    });
+  }
+});
+
+app.post('/api/v1/subjects', async (req, res) => {
+  try {
+    console.log(req.body);
+    const username = req.body.username;
+
+    const user = await db.getUser(username);
+
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: 'User not found'
+      });
+    }
+
+    console.log(user);
+    const subjects = await db.getSubjects(user.user_id);
+    console.log(subjects);
+    
+    log.addLog({
+      action: 'subjects',
+      username: username,
+      ip: req.ip,
+      userAgent: req.headers['user-agent'],
+      location: req.headers['origin'] || 'unknown', 
+      method: req.method,
+      path: req.path,
+      protocol: req.protocol,
+      success: true,
+      statusCode: res.statusCode,
+      responseTime: process.hrtime(),
+      sessionID: req.sessionID || 'no-session'
+    });
+
+    res.json({
+      success: true,
+      subjects: subjects
+    });
+
+  } catch (error) {
+    console.error('Error getting study subjects:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Server error occurred.'
+    });
+  }
+});
 
 
 db.testConn();

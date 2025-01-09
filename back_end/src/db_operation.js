@@ -1,4 +1,4 @@
-const { Token, User, GroupInfo } = require('./database');
+const { Token, User, GroupInfo, StudySubject } = require('./database');
 const { testConnection } = require('./database');
 // 사용자의 토큰을 저장/업데이트하는 함수
 async function saveUserTokens(username, accessToken, refreshToken) {
@@ -16,6 +16,22 @@ async function saveUserTokens(username, accessToken, refreshToken) {
         throw error;
     }
 }
+
+// 사용자의 user_id를 조회하는 함수
+async function getUser(username) {
+    try {
+        const user = await User.findOne({
+            where: {
+                username: username
+            }
+        });
+        return user;
+    } catch (error) {
+        console.error('Error fetching user:', error);
+        throw error;
+    }
+}
+
 
 // 사용자의 salt 값을 조회하는 함수
 async function getUserSalt(username) {
@@ -67,6 +83,52 @@ async function getUserGroups(username) {
     }
 }
 
+// 그룹 멤버 조회
+async function getGroupMembers(groupId) {
+    try {
+        const members = await User.findAll({ where: { group_id: groupId } });
+        return members;
+    } catch (error) {
+        console.error('Error fetching group members:', error);
+        throw error;
+    }
+}
+
+// 그룹 조회
+async function getGroups() {
+    try {
+        const groups = await GroupInfo.findAll();
+        return groups;
+    } catch (error) {
+        console.error('Error fetching groups:', error);
+        throw error;
+    }
+}
+
+// 사용자 조회
+async function getUsers() {
+    try {
+        const users = await User.findAll();
+        return users;
+    } catch (error) {
+        console.error('Error fetching users:', error);
+        throw error;
+    }
+}
+
+async function getSubjects(user_id) {
+    try {
+        const subjects = await StudySubject.findAll({
+            where: { user_id: user_id },
+            attributes: ['subject_id', 'subjectname', 'unit_time', 'color', 'visibility_level_id']
+        });
+        return subjects;
+    } catch (error) {
+        console.error('Error fetching subjects:', error);
+        throw error;
+    }
+}
+
 async function testConn() {
    testConnection();
 }
@@ -76,5 +138,10 @@ module.exports = {
     getUserSalt,
     getUserPasswordHash,
     getUserGroups,
+    getGroupMembers,
+    getGroups,
+    getUsers,
+    getUser,
+    getSubjects,
     testConn
 };

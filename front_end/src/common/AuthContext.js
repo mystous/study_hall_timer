@@ -1,16 +1,17 @@
 import React, { createContext, useState, useContext } from 'react';
+import { saveGroups } from './utils';
 
 export const AuthContext = createContext(null);
 
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
-  const [groups, setGroups] = useState(null);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   //const [isAuthenticated, setIsAuthenticated] = useState(true);
 
   const login = async (username, password) => {
     try {
       
+
       // API 호출 예시
       const response = await fetch(`${process.env.REACT_APP_BACKEND_URL}/api/v1/login`, {
         method: 'POST',
@@ -30,7 +31,7 @@ export const AuthProvider = ({ children }) => {
       localStorage.setItem('accessToken', data.token.accessToken);
       localStorage.setItem('refreshToken', data.token.refreshToken);
       // Get user's groups using access token
-      const groupResponse = await fetch(`${process.env.REACT_APP_BACKEND_URL}/api/v1/user/groups`, {
+      const groupResponse = await fetch(`${process.env.REACT_APP_BACKEND_URL}/api/v1/user/user_groups`, {
         method: 'GET',
         headers: {
           'Authorization': `Bearer ${data.token.accessToken}`,
@@ -43,9 +44,8 @@ export const AuthProvider = ({ children }) => {
       }
 
       const groupData = await groupResponse.json();
-      if (groupData.success) {
-        setGroups(groupData.groups);
-      }
+
+      return groupData;
       
     } catch (error) {
       throw error;
@@ -54,10 +54,15 @@ export const AuthProvider = ({ children }) => {
 
   const logout = () => {
     setUser(null);
+    saveGroups([]);
     setIsAuthenticated(false);
     localStorage.removeItem('accessToken');
     localStorage.removeItem('refreshToken');
+
   };
+
+    // useEffect를 사용하여 `groups` 상태가 변경될 때마다 `localStorage`에 저장
+   
 
   const value = {
     user,

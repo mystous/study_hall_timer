@@ -11,3 +11,17 @@ export const showToastOnce = (message) => {
     }
   };
 
+let groups = [];
+
+export const isAdmin = () => {
+  return groups.some(group => group.group_name === 'admin');
+};
+
+
+export const saveGroups = (array) => {
+  groups = array;
+};
+
+export const getGroups = () => {
+  return groups;
+};

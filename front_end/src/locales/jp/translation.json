@@ -10,6 +10,7 @@
   "sunday": "日曜日",
   "timeFormat": "{{start}}-{{end}}",
   "backToHome": "ホームに戻る",
+  "update": "計画更新",
   "nav": {
     "home": "ホーム",
     "timetable": "時間割",
@@ -17,7 +18,8 @@
     "personalinfo": "個人情報",
     "about": "概要",
     "login": "ログイン",
-    "logout": "ログアウト"
+    "logout": "ログアウト",
+    "admin": "管理者用ページ"
   },
   "logo": {
     "alt": "ロゴ"

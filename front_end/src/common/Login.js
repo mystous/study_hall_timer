@@ -1,9 +1,9 @@
 import React, { useState, useContext } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { AuthContext } from './common/AuthContext';
+import { AuthContext } from './AuthContext';
 import { useTranslation } from 'react-i18next';
-import './css/Login.css';
-
+import '../css/Login.css';
+import { saveGroups } from './utils';
 function Login() {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
@@ -15,7 +15,8 @@ function Login() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      await login(username, password);
+      const data = await login(username, password);
+      saveGroups(data.groups);
       navigate('/'); // 로그인 성공 시 홈으로 이동
     } catch (err) {
       setError(t('login.error'));

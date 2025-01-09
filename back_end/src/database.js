@@ -28,6 +28,28 @@ async function testConnection() {
     }
 }
 
+// VisibilityLevel 모델 정의
+const VisibilityLevel = sequelize.define('visibility_level', {
+    visibility_level_id: {
+        type: Sequelize.INTEGER,
+        primaryKey: true,
+        autoIncrement: true
+    },
+    description: {
+        type: Sequelize.STRING(50),
+        allowNull: false
+    },
+    level: {
+        type: Sequelize.INTEGER,
+        allowNull: false,
+        unique: true
+    }
+}, {
+    tableName: 'visibility_levels',
+    timestamps: false
+});
+
+
 // User 모델 정의
 const User = sequelize.define('user_info', {
     user_id: {
@@ -117,10 +139,50 @@ const Token = sequelize.define('user_info', {
     timestamps: false
 });
 
+// StudySubject 모델 정의
+const StudySubject = sequelize.define('study_subjects', {
+    subject_id: {
+        type: Sequelize.CHAR(36),
+        allowNull: false,
+        defaultValue: Sequelize.UUIDV4
+    },
+    user_id: {
+        type: Sequelize.INTEGER,
+        allowNull: false
+    },
+    subjectname: {
+        type: Sequelize.STRING(255),
+        allowNull: false
+    },
+    unit_time: {
+        type: Sequelize.INTEGER,
+        allowNull: false
+    },
+    color: {
+        type: Sequelize.CHAR(7),
+        allowNull: false
+    },
+    visibility_level_id: {
+        type: Sequelize.INTEGER,
+        allowNull: false
+    }
+}, {
+    tableName: 'study_subjects',
+    timestamps: false,
+    primaryKey: ['user_id', 'subject_id']
+});
+
+// 관계 설정
+StudySubject.belongsTo(User, {
+    foreignKey: 'user_id'
+});
+StudySubject.belongsTo(VisibilityLevel, {
+    foreignKey: 'visibility_level_id'
+});
 
 
 
 module.exports = {
-   Token, User, GroupInfo, UserGroupInfo,
+   Token, User, GroupInfo, UserGroupInfo, VisibilityLevel, StudySubject,
    testConnection
 };

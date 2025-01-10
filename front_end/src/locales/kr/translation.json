@@ -11,6 +11,9 @@
   "timeFormat": "{{start}}시~{{end}}시",
   "backToHome": "홈으로 돌아가기",
   "update": "계획 업데이트",
+  "minutes": "분",
+  "hours": "시간",
+  "thisWeek": "이번주",
   "nav": {
     "home": "홈",
     "timetable": "시간표",

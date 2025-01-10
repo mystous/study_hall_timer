@@ -40,11 +40,40 @@ const logger = () => {
                 timestamp
             };
             saveLogToFile(jsonWithTimestamp);
+            
+            const formatLogMessage = (timestamp, data) => {
+                return `[${timestamp}(KST)] ${JSON.stringify(data)}`;
+            };
+            
+            console.log(formatLogMessage(
+                new Date().toLocaleString('ko-KR', { timeZone: 'Asia/Seoul' }),
+                jsonWithTimestamp
+            ));
+            
             return jsonWithTimestamp;
         }
     };
 };
 
+function addRequestLog(req, res, action, username, success, message = "") {
+    logger().addLog({
+      action: action,
+      username: username,
+      ip: req.ip,
+      userAgent: req.headers['user-agent'],
+      location: req.headers['origin'] || 'unknown',
+      method: req.method,
+      path: req.path,
+      protocol: req.protocol,
+      success: success,
+      statusCode: res.statusCode,
+      responseTime: process.hrtime(),
+      sessionID: req.sessionID || 'no-session',
+      message: message
+    });
+  }
+
 module.exports = {
-    logger
+    logger,
+    addRequestLog
 };

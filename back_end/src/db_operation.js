@@ -1,5 +1,7 @@
-const { Token, User, GroupInfo, StudySubject } = require('./database');
+const { Token, User, GroupInfo, StudySubjects, TimeTable, Categories } = require('./database');
 const { testConnection } = require('./database');
+const { Sequelize } = require('sequelize');
+
 // 사용자의 토큰을 저장/업데이트하는 함수
 async function saveUserTokens(username, accessToken, refreshToken) {
     try {
@@ -118,7 +120,7 @@ async function getUsers() {
 
 async function getSubjects(user_id) {
     try {
-        const subjects = await StudySubject.findAll({
+        const subjects = await StudySubjects.findAll({
             where: { user_id: user_id },
             attributes: ['subject_id', 'subjectname', 'unit_time', 'color', 'visibility_level_id']
         });
@@ -129,19 +131,46 @@ async function getSubjects(user_id) {
     }
 }
 
+async function getTimeTableByDateRange(userId, startDate, endDate) {
+    try {
+        const startcondition = startDate.split('T')[0] + ' 00:00:00';
+        const endcondition = endDate.split('T')[0] + ' 23:59:59';
+        
+        const schedules = await TimeTable.findAll({
+            where: {
+                user_id: userId,
+                start_time: {
+                    [Sequelize.Op.between]: [startcondition, endcondition]
+                }
+            },
+            attributes: ['schedule_id', 'subject_id', 'scheduled_time', 'start_time', 'dimmed'],
+            include: [{
+                model: StudySubjects,
+                attributes: ['subject_id', 'subjectname', 'color', 'category_id'],
+                required: true,
+                include: [{
+                    model: Categories,
+                    attributes: ['category_name'],
+                    required: true
+                }]
+            }],
+            order: [['start_time', 'ASC']]
+        });
+        return schedules;
+    } catch (error) {
+        console.error('Error fetching time table:', error);
+        throw error;
+    }
+}
+
+
 async function testConn() {
    testConnection();
 }
 
 module.exports = {
-    saveUserTokens,
-    getUserSalt,
-    getUserPasswordHash,
-    getUserGroups,
-    getGroupMembers,
-    getGroups,
-    getUsers,
-    getUser,
-    getSubjects,
+    saveUserTokens, getUserSalt, getUserPasswordHash, getUserGroups, 
+    getGroupMembers, getGroups, getUsers, getUser, getSubjects, 
+    getTimeTableByDateRange, 
     testConn
 };

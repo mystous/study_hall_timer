@@ -6,51 +6,108 @@ import { useAuth } from './common/AuthContext';
 
 function TimeTable() {
   const { t } = useTranslation();
-  const [startTime, setStartTime] = useState(6); // 기본값 8시
-  const [endTime, setEndTime] = useState(26);    // 기본값 26시
+  const [startTime, setStartTime] = useState(() => {
+    const savedStartTime = localStorage.getItem('startTime');
+    return savedStartTime ? parseInt(savedStartTime) : 6;
+  });
+  const [endTime, setEndTime] = useState(() => {
+    const savedEndTime = localStorage.getItem('endTime'); 
+    return savedEndTime ? parseInt(savedEndTime) : 26;
+  });
   const [subjects, setSubjects] = useState([]);
+  const [schedules, setSchedules] = useState([]);
   const { user } = useAuth();
   const location = useLocation();
 
-  useEffect(() => {
-    const fetchSubjects = async () => {
-      try {
-        const response = await fetch(`${process.env.REACT_APP_BACKEND_URL}/api/v1/subjects`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${localStorage.getItem('accessToken')}`
-          },
-          body: JSON.stringify({
-            username: user.username
-          })
-        });
-        const data = await response.json();
-        if (data.success) {
-          const result  = data.subjects;
-          setSubjects(result);
-        }
-      } catch (error) {
-        console.error('Error fetching subjects:', error);
-        // 에러 시 기본 과목 사용
-        setSubjects(['Math', 'Science', 'English', 'History']);
-      }
-    };
-
-    fetchSubjects();
-  }, []);
-
+  
   const getMondayDate = (date) => {
     const d = new Date(date);
     const day = d.getDay();
     const diff = d.getDate() - day + (day === 0 ? -6 : 1); // adjust when day is sunday
     return new Date(d.setDate(diff));
   };
-  const [currentMonday, setCurrentMonday] = useState(getMondayDate(new Date()));
 
-  const today = new Date();
-//  const currentMonday = getMondayDate(today);
-  
+  const fillSchedule = () => {
+    schedules.forEach(schedule => {
+      console.log(schedule);
+    });
+  };
+ 
+
+  const [currentMonday, setCurrentMonday] = useState(getMondayDate(new Date()));
+  const fetchSubjects = async () => {
+    try {
+      const response = await fetch(`${process.env.REACT_APP_BACKEND_URL}/api/v1/subjects`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('accessToken')}`
+        },
+        body: JSON.stringify({
+          username: user.username
+        })
+      });
+      const data = await response.json();
+      if (data.success) {
+        const result  = data.subjects;
+        setSubjects(result);
+      }
+    } catch (error) {
+      console.error('Error fetching subjects:', error);
+      // 에러 시 기본 과목 사용
+      setSubjects(['Math', 'Science', 'English', 'History']);
+    }
+  };
+
+  const fetchSchedule = async () => {
+    try {
+      const startDate = currentMonday;
+      const endDate = new Date(currentMonday);
+      endDate.setDate(endDate.getDate() + 6);
+
+      const response = await fetch(`${process.env.REACT_APP_BACKEND_URL}/api/v1/time_table`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('accessToken')}`
+        },
+        body: JSON.stringify({
+          startDate: startDate.toISOString(),
+          endDate: endDate.toISOString(),
+          username: user.username
+        })
+      });
+
+      const data = await response.json();
+      if (data.success) {
+        const result = data.schedules;
+        setSchedules(result);
+        // schedules.forEach(schedule => {
+        //  console.log('Schedule:', schedule);
+        // });
+      }
+    } catch (error) {
+      console.error('Error fetching schedule:', error);
+    }
+  };
+
+  function initializeData() {
+      schedules.forEach(schedule => {
+         console.log('Schedule:', schedule);
+        });
+  }
+
+  useEffect(() => {
+    if (schedules.length > 0) {
+      initializeData();
+    }
+  }, [schedules]);
+
+  useEffect(() => {
+    fetchSubjects();
+    fetchSchedule();  
+  }, []); // Add dependencies to prevent unnecessary re-renders
+
   const generateTimeSlots = () => {
     const slots = [];
     for (let hour = startTime; hour <= endTime; hour++) {
@@ -78,6 +135,7 @@ function TimeTable() {
       const value = parseInt(e.target.value);
       if (value >= 0 && value <= 48) {
         setStartTime(value);
+        localStorage.setItem('startTime', value);
       }
     };
   
@@ -85,6 +143,7 @@ function TimeTable() {
       const value = parseInt(e.target.value);
       if (value >= 0 && value <= 48) {
         setEndTime(value);
+        localStorage.setItem('endTime', value);
       }
     };
 
@@ -154,22 +213,70 @@ function TimeTable() {
       document.addEventListener('mouseup', mouseUpHandler);
 
       // Add subject options that can be dragged
-      Array.from(subjects).forEach(subject => {
+      // Create container for 2 columns
+      const subjectsContainer = document.createElement('div');
+      subjectsContainer.style.cssText = `
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 1px;
+        width: 100%;
+      `;
+      dialog.appendChild(subjectsContainer);
+
+      // Sort subjects by unit_time and map to heights starting from 50px
+      const baseHeight = 30;
+      const heightGap = 20;
+      const sortedUnitTimes = Array.from(new Set(Array.from(subjects).map(s => s.unit_time))).sort((a,b) => a - b);
+      const heightMap = Object.fromEntries(sortedUnitTimes.map((time, i) => [time, baseHeight + (i * heightGap)]));
+
+      // Split subjects into left and right columns
+      const leftSubjects = Array.from(subjects).slice(0, Math.ceil(subjects.size/2));
+      const rightSubjects = Array.from(subjects).slice(Math.ceil(subjects.size/2));
+
+      const getTimeText = (unitTime) => {
+        const hours = Math.floor(unitTime / 60);
+        const minutes = unitTime % 60;
+        return hours > 0 ? (minutes > 0 ?
+          `${hours}${t('hours')} ${minutes}${t('minutes')}` : 
+          `${hours}${t('hours')}`) : 
+          `${minutes}${t('minutes')}`;
+      };
+
+      // Create a subject element with given subject and index
+      const createSubjectElement = (subject, index, totalLength) => {
         const subjectEl = document.createElement('div');
-        subjectEl.textContent = subject.subjectname;
+        const timeText = getTimeText(subject.unit_time);
+        const boldText = document.createElement('strong');
+        boldText.textContent = `${subject.subjectname} - ${timeText}`;
+        subjectEl.appendChild(boldText);
         subjectEl.draggable = true;
         subjectEl.style.cssText = `
           padding: 10px;
-          margin: 5px;
+          margin: 5px 5px ${index === totalLength-1 ? '5px' : '15px'} 5px;
+          height: ${heightMap[subject.unit_time]}px;
           background: ${subject.color || '#f0f0f0'};
           border-radius: 4px;
           cursor: move;
           border: 1px solid gray;
+          display: flex;
+          align-items: center;
         `;
         subjectEl.addEventListener('dragstart', (e) => {
           e.dataTransfer.setData('text/plain', subject.subjectname);
         });
-        dialog.appendChild(subjectEl);
+        return subjectEl;
+      };
+
+      // Create left column subjects
+      leftSubjects.forEach((subject, index) => {
+        const subjectEl = createSubjectElement(subject, index, leftSubjects.length);
+        subjectsContainer.appendChild(subjectEl);
+      });
+
+      // Create right column subjects  
+      rightSubjects.forEach((subject, index) => {
+        const subjectEl = createSubjectElement(subject, index, rightSubjects.length);
+        subjectsContainer.appendChild(subjectEl);
       });
 
       // Add close button
@@ -269,18 +376,41 @@ function TimeTable() {
       </div>
     </div>
       <div style={{ textAlign: 'center', marginBottom: '10px', marginTop: '20px', fontSize: '25px', fontWeight: 'bold', color: 'gray' }}>
-        {currentMonday.getFullYear()} W{String(Math.ceil((currentMonday.getTime() - new Date(currentMonday.getFullYear(), 0, 1).getTime()) / (7 * 86400000))).padStart(2, '0')}
+        <span>
+          {currentMonday.getFullYear()} W{String(Math.ceil((currentMonday.getTime() - new Date(currentMonday.getFullYear(), 0, 1).getTime()) / (7 * 86400000))).padStart(2, '0')}
+          <button
+            onClick={() => setCurrentMonday(getMondayDate(new Date()))}
+            style={{
+              marginLeft: '15px',
+              padding: '3px 8px',
+              backgroundColor: '#EEEEEE',
+              color: 'black', 
+              border: 'none',
+              borderRadius: '4px',
+              cursor: 'pointer',
+              fontSize: '14px'
+            }}
+          >
+            {t('thisWeek')}
+          </button>
+        </span>
       </div>
       <div style={{ display: 'flex', alignItems: 'center', gap: '5px', marginBottom: '20px', justifyContent: 'center' }}>
         <button 
-          onClick={() => setCurrentMonday(new Date(currentMonday.getTime() - 7 * 86400000))}
+          onClick={() => {
+            setCurrentMonday(new Date(currentMonday.getTime() - 7 * 86400000));
+            fetchSchedule();
+          }}
           style={{ border: 'none', background: 'none', cursor: 'pointer', fontSize: '20px' }}
         >
           ◀
         </button>
         <h1>{t('timetable')}</h1>
         <button
-          onClick={() => setCurrentMonday(new Date(currentMonday.getTime() + 7 * 86400000))}
+          onClick={() => {
+            setCurrentMonday(new Date(currentMonday.getTime() + 7 * 86400000));
+            fetchSchedule();
+          }}
           style={{ border: 'none', background: 'none', cursor: 'pointer', fontSize: '20px' }}
         >
           ▶

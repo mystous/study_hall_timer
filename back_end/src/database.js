@@ -105,19 +105,6 @@ const UserGroupInfo = sequelize.define('user_group_info', {
     timestamps: false
 });
 
-// 관계 설정
-User.belongsToMany(GroupInfo, { 
-    through: UserGroupInfo,
-    foreignKey: 'user_id'
-});
-GroupInfo.belongsToMany(User, {
-    through: UserGroupInfo,
-    foreignKey: 'group_id'  
-});
-
-
-
-
 // Token 모델 정의
 const Token = sequelize.define('user_info', {
     username: {
@@ -140,9 +127,11 @@ const Token = sequelize.define('user_info', {
 });
 
 // StudySubject 모델 정의
-const StudySubject = sequelize.define('study_subjects', {
+const StudySubjects = sequelize.define('study_subjects', {
     subject_id: {
-        type: Sequelize.CHAR(36),
+        type: Sequelize.INTEGER,
+        primaryKey: true,
+        autoIncrement: true,
         allowNull: false,
         defaultValue: Sequelize.UUIDV4
     },
@@ -168,21 +157,119 @@ const StudySubject = sequelize.define('study_subjects', {
     }
 }, {
     tableName: 'study_subjects',
+    timestamps: false//,
+    //primaryKey: ['user_id', 'subject_id']
+});
+
+// TimeTable 모델 정의
+const TimeTable = sequelize.define('time_table', {
+    schedule_id: {
+        type: Sequelize.INTEGER,
+        primaryKey: true,
+        autoIncrement: true,
+        allowNull: false
+    },
+    subject_id: {
+        type: Sequelize.INTEGER,
+        allowNull: false
+    },
+    user_id: {
+        type: Sequelize.INTEGER,
+        allowNull: false
+    },
+    scheduled_time: {
+        type: Sequelize.INTEGER,
+        allowNull: false
+    },
+    start_time: {
+        type: Sequelize.DATE,
+        primaryKey: true,
+        allowNull: false
+    },
+    created_at: {
+        type: Sequelize.DATE,
+        defaultValue: Sequelize.literal('CURRENT_TIMESTAMP')
+    },
+    modified_at: {
+        type: Sequelize.DATE,
+        defaultValue: Sequelize.literal('CURRENT_TIMESTAMP'),
+        onUpdate: Sequelize.literal('CURRENT_TIMESTAMP')
+    },
+    dimmed: {
+        type: Sequelize.BOOLEAN,
+        defaultValue: false
+    }
+}, {
+    tableName: 'time_table',
     timestamps: false,
-    primaryKey: ['user_id', 'subject_id']
+    charset: 'utf8mb4',
+    engine: 'InnoDB'
+});
+
+// Categories 모델 정의
+const Categories = sequelize.define('categories', {
+    category_id: {
+        type: Sequelize.INTEGER,
+        primaryKey: true,
+        autoIncrement: true,
+        allowNull: false
+    },
+    category_name: {
+        type: Sequelize.STRING(255),
+        allowNull: false
+    }
+}, {
+    tableName: 'categories',
+    timestamps: false,
+    charset: 'utf8mb4',
+    engine: 'InnoDB'
 });
 
 // 관계 설정
-StudySubject.belongsTo(User, {
+TimeTable.belongsTo(StudySubjects, {
+    foreignKey: 'subject_id'
+});
+
+TimeTable.belongsTo(User, {
     foreignKey: 'user_id'
 });
-StudySubject.belongsTo(VisibilityLevel, {
+
+StudySubjects.hasMany(TimeTable, {
+    foreignKey: 'subject_id'
+});
+
+TimeTable.belongsTo(StudySubjects, {
+    foreignKey: 'subject_id'
+});
+
+Categories.hasMany(StudySubjects, {
+    foreignKey: 'category_id'
+});
+
+StudySubjects.belongsTo(Categories, {
+    foreignKey: 'category_id'
+});
+
+StudySubjects.belongsTo(User, {
+    foreignKey: 'user_id'
+});
+
+StudySubjects.belongsTo(VisibilityLevel, {
     foreignKey: 'visibility_level_id'
 });
 
+User.belongsToMany(GroupInfo, {
+    through: UserGroupInfo,
+    foreignKey: 'user_id'
+});
+
+GroupInfo.belongsToMany(User, {
+    through: UserGroupInfo,
+    foreignKey: 'group_id'
+});
 
 
 module.exports = {
-   Token, User, GroupInfo, UserGroupInfo, VisibilityLevel, StudySubject,
+   Token, User, GroupInfo, UserGroupInfo, VisibilityLevel, StudySubjects, TimeTable, Categories,
    testConnection
 };

@@ -11,6 +11,9 @@
   "timeFormat": "{{start}}-{{end}}",
   "backToHome": "ホームに戻る",
   "update": "計画更新",
+  "minutes": "分",
+  "hours": "時間",
+  "thisWeek": "今週",
   "nav": {
     "home": "ホーム",
     "timetable": "時間割",

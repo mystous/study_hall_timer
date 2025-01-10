@@ -7,7 +7,7 @@ const port = process.env.PORT || 9090; // 환경변수에서 포트를 가져오
 const db = require('./db_operation');
 const passwordManager = require('./authorization');
 const jwt = require('jsonwebtoken');
-const { logger } = require('./utils/utils');
+const { logger, addRequestLog } = require('./utils/utils');
 
 const log = logger();
 
@@ -17,6 +17,9 @@ app.use(express.urlencoded({ extended: true }));
 // CORS 설정
 
 const allowedOrigins = ['http://localhost:3000', 'http://studyhalltimer.com', 'http://studyhalltimer.com:3000'];
+
+// JWT 시크릿 키 설정 (환경변수에서 가져오거나 기본값 사용)
+const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key';
 
 app.use(cors({
   origin: function (origin, callback) {
@@ -46,41 +49,63 @@ app.listen(port, () => {
   console.log(`Server is running on http://localhost:${port}`);
 });
 
+function validateAuthHeaderWithUsername(req, res, usernameObj) {
+  const authHeader = req.headers.authorization;
+  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      res.status(401).json({
+          success: false,
+          message: 'No token provided'
+      });
+      addRequestLog(req, res, 'user_groups', req.body.username, false, 'No token provided:' + authHeader);
+      return false;
+  }
+  const token = authHeader.split(' ')[1];
+  const decoded = jwt.verify(token, JWT_SECRET);
+  usernameObj.value = decoded.username;
+  if (!decoded) {
+    res.status(401).json({
+      success: false,
+      message: 'Invalid token'
+    });
+    addRequestLog(req, res, 'user_groups', req.body.username, false, 'Invalid token');
+    return false;
+  }
+
+  return true;
+}
+
+function validateAuthHeader(req, res) {
+  let username = "";
+  return validateAuthHeaderWithUsername(req, res, username);
+}
+
 // 사용자의 그룹 정보를 조회하는 API 엔드포인트
 app.get('/api/v1/user/user_groups', async (req, res) => {
     try {
-        // Authorization 헤더에서 토큰 추출
-        const authHeader = req.headers.authorization;
-        if (!authHeader || !authHeader.startsWith('Bearer ')) {
-            return res.status(401).json({
-                success: false,
-                message: 'No token provided'
-            });
-        }
+     
+      const username = { value: '' };
+      if (!validateAuthHeaderWithUsername(req, res, username)) {
+          return res;
+      }
 
-        const token = authHeader.split(' ')[1];
+      // 사용자의 그룹 정보 조회
+      const groups = await db.getUserGroups(username.value);
 
-        // 토큰 검증
-        const decoded = jwt.verify(token, JWT_SECRET);
-        const username = decoded.username;
-
-        // 사용자의 그룹 정보 조회
-        const groups = await db.getUserGroups(username);
-
-        res.json({
-            success: true,
-            groups: groups
-        });
+      res.json({
+          success: true,
+          groups: groups
+      });
 
     } catch (error) {
         if (error.name === 'JsonWebTokenError' || error.name === 'TokenExpiredError') {
+            addRequestLog(req, res, 'user_groups', req.body.username, false, 'Invalid or expired token:' + error.message);
             return res.status(401).json({
                 success: false,
                 message: 'Invalid or expired token'
             });
         }
-        
-        console.error('Error fetching user groups:', error);
+        addRequestLog(req, res, 'user_groups', req.body.username, false, 'Internal server error:' + error.message);
+
         res.status(500).json({
             success: false,
             message: 'Internal server error'
@@ -88,30 +113,16 @@ app.get('/api/v1/user/user_groups', async (req, res) => {
     }
 });
 
-
-// JWT 시크릿 키 설정 (환경변수에서 가져오거나 기본값 사용)
-const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key';
-
 // 로그인 API 엔드포인트
 app.post('/api/v1/login', async (req, res) => {
+  
+  
   try {
     const { username, password } = req.body;
     const salt = await db.getUserSalt(username);
 
     if (!salt) {
-      log.addLog({
-        action: 'login',
-        username: username,
-        ip: req.ip,
-        userAgent: req.headers['user-agent'],
-        location: req.headers['origin'] || 'unknown',
-        method: req.method,
-        path: req.path,
-        protocol: req.protocol,
-        success: false,
-        statusCode: res.statusCode,
-        message: 'Cannot find user.'
-      });
+      addRequestLog(req, res, 'login', username, false);
       return res.status(401).json({ 
         success: false, 
         message: 'Cannot find user.' 
@@ -122,19 +133,7 @@ app.post('/api/v1/login', async (req, res) => {
     const isValid = await passwordManager.verifyPassword(password, hashedPassword, salt);
 
     if (!isValid) {
-      log.addLog({
-        action: 'login',
-        username: username,
-        ip: req.ip,
-        userAgent: req.headers['user-agent'],
-        location: req.headers['origin'] || 'unknown',
-        method: req.method,
-        path: req.path,
-        protocol: req.protocol,
-        success: false,
-        statusCode: res.statusCode,
-        message: 'Password does not match.'
-      });
+      addRequestLog(req, res, 'login', username, false);
       return res.status(401).json({ 
         success: false, 
         message: 'Password does not match.' 
@@ -154,7 +153,8 @@ app.post('/api/v1/login', async (req, res) => {
       { expiresIn: '14d' } // refresh 토큰 유효기간 14일
     );
 
-    // 로그인 성공 및 토큰 전달
+    // 로그인 성공 및 토큰 전달    
+    addRequestLog(req, res, 'login', username, true);
     res.json({ 
       success: true,
       message: 'Login successful',
@@ -172,22 +172,10 @@ app.post('/api/v1/login', async (req, res) => {
     await db.saveUserTokens(username, accessToken, refreshToken);
     // 로그인 성공 로그 저장
   
-    log.addLog({
-      action: 'login',
-      username: username,
-      ip: req.ip,
-      userAgent: req.headers['user-agent'],
-      location: req.headers['origin'] || 'unknown',
-      method: req.method,
-      path: req.path,
-      protocol: req.protocol,
-      success: true,
-      statusCode: res.statusCode,
-      responseTime: process.hrtime(),
-      sessionID: req.sessionID || 'no-session'
-    });
+
 
   } catch (error) {
+    addRequestLog(req, res, 'login', req.body.username, false, 'Login error:' + error.message);
     console.error('Login error:', error);
     res.status(500).json({ 
       success: false, 
@@ -199,21 +187,13 @@ app.post('/api/v1/login', async (req, res) => {
 // Admin routes
 app.post('/api/v1/admin/users', async (req, res) => {
   try {
+
+    if (!validateAuthHeader(req, res)) {
+      return res;
+    }
+
     const users = await db.getUsers();
-    log.addLog({
-      action: 'get_users',
-      username: req.body.username,
-      ip: req.ip,
-      userAgent: req.headers['user-agent'], 
-      location: req.headers['origin'] || 'unknown',
-      method: req.method,
-      path: req.path,
-      protocol: req.protocol,
-      success: true,
-      statusCode: res.statusCode,
-      responseTime: process.hrtime(),
-      sessionID: req.sessionID || 'no-session'
-    });
+    addRequestLog(req, res, 'get_users', req.body.username, true);
 
     res.json({
       success: true,
@@ -221,6 +201,7 @@ app.post('/api/v1/admin/users', async (req, res) => {
     });
 
   } catch (error) {
+    addRequestLog(req, res, 'get_users', req.body.username, false, 'Error getting users:' + error.message);
     console.error('Error getting users:', error);
     res.status(500).json({
       success: false,
@@ -231,21 +212,20 @@ app.post('/api/v1/admin/users', async (req, res) => {
 
 app.post('/api/v1/admin/groups', async (req, res) => {
   try {
+    if (!validateAuthHeader(req, res)) {
+      return res;
+    }
+
     const groups = await db.getGroups();
-    log.addLog({
-      action: 'get_groups', 
-      username: req.body.username,
-      ip: req.ip,
-      userAgent: req.headers['user-agent'],
-      location: req.headers['origin'] || 'unknown', 
-      method: req.method,
-      path: req.path,
-      protocol: req.protocol,
-      success: true,
-      statusCode: res.statusCode,
-      responseTime: process.hrtime(),
-      sessionID: req.sessionID || 'no-session'
-    });
+    if(!groups) {
+      const response = res.status(404).json({
+        success: false,
+        message: 'No groups found'
+      });
+      addRequestLog(req, res, 'get_groups', req.body.username, false, 'No groups found');
+      return response;
+    }
+    addRequestLog(req, res, 'get_groups', req.body.username, true);
 
     res.json({
       success: true,
@@ -253,6 +233,7 @@ app.post('/api/v1/admin/groups', async (req, res) => {
     });
 
   } catch (error) {
+    addRequestLog(req, res, 'get_groups', req.body.username, false, 'Error getting groups:' + error.message);
     console.error('Error getting groups:', error);
     res.status(500).json({
       success: false,
@@ -268,20 +249,7 @@ app.post('/api/v1/admin/groups/:groupId/members', async (req, res) => {
     console.log(groupId);
     const members = await db.getGroupMembers(groupId);
     console.log(members);
-    log.addLog({
-      action: 'get_group_members',
-      username: req.body.username,
-      ip: req.ip,
-      userAgent: req.headers['user-agent'],
-      location: req.headers['origin'] || 'unknown',
-      method: req.method,
-      path: req.path,
-      protocol: req.protocol,
-      success: true,
-      statusCode: res.statusCode,
-      responseTime: process.hrtime(),
-      sessionID: req.sessionID || 'no-session'
-    });
+    addRequestLog(req, res, 'get_group_members', req.body.username, true);
 
     res.json({
       success: true,
@@ -289,6 +257,7 @@ app.post('/api/v1/admin/groups/:groupId/members', async (req, res) => {
     });
 
   } catch (error) {
+    addRequestLog(req, res, 'get_group_members', req.body.username, false, 'Error getting group members:' + error.message);
     console.error('Error getting group members:', error);
     res.status(500).json({
       success: false, 
@@ -299,36 +268,25 @@ app.post('/api/v1/admin/groups/:groupId/members', async (req, res) => {
 
 app.post('/api/v1/subjects', async (req, res) => {
   try {
-    console.log(req.body);
+    if (!validateAuthHeader(req, res)) {
+      return res;
+    }
+
     const username = req.body.username;
 
     const user = await db.getUser(username);
 
     if (!user) {
-      return res.status(404).json({
+      const response = res.status(404).json({
         success: false,
         message: 'User not found'
       });
+      addRequestLog(req, res, 'subjects', username, false, 'User not found');
+      return response;
     }
 
-    console.log(user);
     const subjects = await db.getSubjects(user.user_id);
-    console.log(subjects);
-    
-    log.addLog({
-      action: 'subjects',
-      username: username,
-      ip: req.ip,
-      userAgent: req.headers['user-agent'],
-      location: req.headers['origin'] || 'unknown', 
-      method: req.method,
-      path: req.path,
-      protocol: req.protocol,
-      success: true,
-      statusCode: res.statusCode,
-      responseTime: process.hrtime(),
-      sessionID: req.sessionID || 'no-session'
-    });
+    addRequestLog(req, res, 'subjects', username, true);
 
     res.json({
       success: true,
@@ -336,11 +294,48 @@ app.post('/api/v1/subjects', async (req, res) => {
     });
 
   } catch (error) {
+    addRequestLog(req, res, 'subjects', req.body.username, false, 'Error getting study subjects:' + error.message);
     console.error('Error getting study subjects:', error);
     res.status(500).json({
       success: false,
       message: 'Server error occurred.'
     });
+  }
+});
+
+app.post('/api/v1/time_table', async (req, res) => {
+  try {
+    if (!validateAuthHeader(req, res)) {
+      return res;
+    }
+    const username = req.body.username;
+
+    const user = await db.getUser(username);
+    const startDate = req.body.startDate;
+    const endDate = req.body.endDate;
+    const timeTable = await db.getTimeTableByDateRange(user.user_id, startDate, endDate);
+    if(!timeTable) {
+    
+      const response = res.status(404).json({
+        success: false,
+        message: 'No time table found'
+      });
+      addRequestLog(req, res, 'time_table', req.body.username, false, 'No time table found');
+      return response;
+    }
+    addRequestLog(req, res, 'time_table', req.body.username, true);
+    res.json({
+        success: true,
+        schedules: timeTable
+      });
+  } catch (error) {
+    
+    console.error('Error getting time table:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Server error occurred.'
+    });
+    addRequestLog(req, res, 'time_table', req.body.username, false, 'Error getting time table:' + error.message);
   }
 });
 

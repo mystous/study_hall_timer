@@ -11,6 +11,9 @@
   "timeFormat": "{{start}}-{{end}}",
   "backToHome": "Back to Home",
   "update": "Update Plan",
+  "minutes": "mins",
+  "hours": "hrs",
+  "thisWeek": "This Week",
   "nav": {
     "home": "Home",
     "timetable": "Time Table",

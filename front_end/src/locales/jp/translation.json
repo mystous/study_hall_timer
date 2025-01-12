@@ -14,6 +14,7 @@
   "minutes": "分",
   "hours": "時間",
   "thisWeek": "今週",
+  "startWithMonday": "月曜日から始める",
   "nav": {
     "home": "ホーム",
     "timetable": "時間割",

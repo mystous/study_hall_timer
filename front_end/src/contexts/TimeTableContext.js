@@ -46,13 +46,23 @@ export const TimeTableProvider = ({ children }) => {
     return sunday;
   };
 
+  useEffect(() => {
+    // console.log('startWithMonday is updated');
+    const tuesday = new Date(currentStartDay);
+    tuesday.setDate(tuesday.getDate() + 1); // Monday에서 하루 더함
+    setCurrentStartDay(startWithMonday ? getMondayDate(tuesday) : getSundayDate(tuesday));
+  }, [startWithMonday]);
 
 
   const [currentStartDay, setCurrentStartDay] = useState(startWithMonday ? getMondayDate(new Date()) : getSundayDate(new Date()));
 
+  useEffect(() => {
+    console.log('useEffect : currentStartDay is ', currentStartDay);
+  }, [currentStartDay]);
+
   const setCurrentStartDaywithToday = () => {
     setCurrentStartDay(startWithMonday ? getMondayDate(new Date()) : getSundayDate(new Date()));
-    console.log('currentStartDay is setted', currentStartDay);
+    // console.log('currentStartDay is setted', currentStartDay);
   }
 
   const getCurrentStartDay = () => {
@@ -85,16 +95,14 @@ export const TimeTableProvider = ({ children }) => {
     }
   };
 
-
-  const fetchSchedule = async () => {
+  const fetchScheduleByDate = async (date) => {
     try {
       if (!user) {
         return;
       }
-      console.log(user);
-      const startDate = currentStartDay;
-      const endDate = new Date(currentStartDay);
-      endDate.setDate(endDate.getDate() + 6);
+      let startDate = date;
+      let endDate = new Date(date);
+      endDate.setDate(endDate.getDate() + 7);
 
       const response = await fetch(`${process.env.REACT_APP_BACKEND_URL}/api/v1/time_table`, {
         method: 'POST',
@@ -113,8 +121,8 @@ export const TimeTableProvider = ({ children }) => {
       if (data.success) {
         const result = data.schedules;
         setSchedules(result);
-        console.log('result is ', result);
-        console.log('startDate is ', startDate, 'endDate is ', endDate);
+        // console.log('result is ', result);
+        // console.log('startDate is ', startDate, 'endDate is ', endDate);
         // schedules.forEach(schedule => {
         //  console.log('Schedule:', schedule);
         // });
@@ -125,11 +133,20 @@ export const TimeTableProvider = ({ children }) => {
   };
 
 
+  const fetchSchedule = async () => {
+    try {
+      fetchScheduleByDate(currentStartDay);
+    } catch (error) {
+      console.error('Error fetching schedule:', error);
+    }
+  };
+
+
   const initializeData = async () => {
         fetchSubjects();
         fetchSchedule();
         setUpdateTimes(updateTimes + 1);
-        console.log('updateTimes is ', updateTimes);
+        // console.log('updateTimes is ', updateTimes);
   };
 
   const finalizeData = async () => {
@@ -156,7 +173,8 @@ export const TimeTableProvider = ({ children }) => {
     currentStartDay,
     setCurrentStartDay,
     setCurrentStartDaywithToday,
-    fetchSchedule
+    fetchSchedule,
+    fetchScheduleByDate
   }
 
   return (

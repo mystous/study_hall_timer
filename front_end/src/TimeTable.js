@@ -28,20 +28,15 @@ function TimeTable() {
             updateTimes,
             setStartWithMonday,
             setCurrentStartDaywithToday,
-            fetchSchedule
+            fetchSchedule,
+            fetchScheduleByDate
           } = useTimeTable();
 
 
     useEffect(() => {
-        console.log('subjects is updated');
-        handleUpdateTimes();
+       handleUpdateTimes();
     }, [updateTimes]); 
 
-    useEffect(() => {
-        console.log('startWithMonday is updated');
-        setCurrentStartDaywithToday();
-    }, [startWithMonday]);
- 
     const generateTimeSlots = () => {
         const slots = [];
         for (let hour = startTime; hour <= endTime; hour++) {
@@ -70,6 +65,7 @@ function TimeTable() {
         if (value >= 0 && value <= 48) {
             setStartTime(value);
             localStorage.setItem('startTime', value);
+            handleUpdateTimes();
         }
     };
   
@@ -78,52 +74,54 @@ function TimeTable() {
         if (value >= 0 && value <= 48) {
             setEndTime(value);
             localStorage.setItem('endTime', value);
+            handleUpdateTimes();
         }
     };
 
     let cellId = 0;
 
     const createScheduleBar = (startRowIndex, dayIndex, height, color, text, id) => {
-      const rowElement = document.querySelector(`.timetable tbody tr:nth-child(${startRowIndex + 1})`);
-      if (rowElement) {
-          const cell = rowElement.children[(startRowIndex % 2 === 0 ? dayIndex + 1 : dayIndex)]; // +1 because first column is time
-          if (cell) {
-              // Create schedule bar container
-              const scheduleBar = document.createElement('div');
-              scheduleBar.classList.add('schedule-bar');
-              scheduleBar.setAttribute('data-schedule-id', 'schedule-bar-' + id);
-              scheduleBar.style.cssText = `
-                  position: absolute;
-                  top: 0;
-                  left: 10%;
-                  width: 40%;
-                  height: ${height/30 * 47}px;
-                  background-color: ${color};
-                  display: flex;
-                  align-items: center;
-                  justify-content: center;
-                  font-size: 12px;
-                  padding: 0px;
-                  overflow: auto;
-                  word-wrap: break-word;
-                  white-space: normal;
-                  font-weight: bold;
-                  border: 1px solid #444;
-              `;
-              scheduleBar.textContent = text;
-              
-              // Set cell position to relative for absolute positioning of bar
-              cell.style.position = 'relative';
-              cell.appendChild(scheduleBar);
-          }
-      }
-  };
+        if(dayIndex < 0) {
+            return;
+        }
+        
+        const rowElement = document.querySelector(`.timetable tbody tr:nth-child(${startRowIndex + 1})`);
+        if (rowElement) {
+            const cell = rowElement.children[(startRowIndex % 2 === 0 ? dayIndex + 1 : dayIndex)]; // +1 because first column is time
+            if (cell) {
+                // Create schedule bar container
+                const scheduleBar = document.createElement('div');
+                scheduleBar.classList.add('schedule-bar');
+                scheduleBar.setAttribute('data-schedule-id', 'schedule-bar-' + id);
+                scheduleBar.style.cssText = `
+                    position: absolute;
+                    top: 0;
+                    left: 10%;
+                    width: 40%;
+                    height: ${height/30 * 47}px;
+                    background-color: ${color};
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    font-size: 12px;
+                    padding: 0px;
+                    overflow: auto;
+                    word-wrap: break-word;
+                    white-space: normal;
+                    font-weight: bold;
+                    border: 1px solid #444;
+                `;
+                scheduleBar.textContent = text;
+                
+                // Set cell position to relative for absolute positioning of bar
+                cell.style.position = 'relative';
+                cell.appendChild(scheduleBar);
+            }
+        }
+    };
 
 
     const handleUpdateTimes = () => {
-      console.log('updateTimes is ', updateTimes);
-
-        // Remove all elements with data-schedule-id- attribute
         const removeExistingSchedules = () => {
             document.querySelectorAll('[data-schedule-id]').forEach(element => {
                 element.remove();
@@ -136,42 +134,72 @@ function TimeTable() {
             cell.style.background = 'none';
         });
 
-        //console.log('schedules is ', schedules);
-      
-        // Display schedules as bars
         schedules.forEach(schedule => {
             const getScheduleIndices = (scheduleTime) => {
-                const startDayNum = currentStartDay.toISOString().split('T')[0].split('-')[2];
-                const scheduleDayNum = scheduleTime.split('T')[0].split('-')[2];
-                const dayIndex = parseInt(scheduleDayNum) - parseInt(startDayNum);
-                //console.log('startDayNum is ', startDayNum, 'scheduleDayNum is ', scheduleDayNum, 'dayIndex is ', dayIndex);
+                const startDayNum = currentStartDay.getDate();
+                const scheduleDayNum = new Date(scheduleTime).getDate();
+                const dayIndex = scheduleDayNum - startDayNum;
 
-                const scheduleHour = parseInt(scheduleTime.split('T')[1].split(':')[0]);
-                const scheduleMinute = parseInt(scheduleTime.split('T')[1].split(':')[1]);
+                const scheduleHour = parseInt(scheduleTime.substring(11, 13));
+                const scheduleMinute = parseInt(scheduleTime.substring(14, 16));
 
                 const scheduleTimeInMinutes = scheduleHour * 60 + scheduleMinute;
                 const startTimeInMinutes = startTime * 60;
-
+          
                 const minuteDiff = scheduleTimeInMinutes - startTimeInMinutes;
-                const rowIndex = Math.floor(minuteDiff / 30);
+                let rowIndex = Math.floor(minuteDiff / 30);
 
-                //console.log('minuteDiff is ', minuteDiff, 'rowIndex is ', rowIndex);
-                
-                return { rowIndex, dayIndex };
+                let adjust = 0;
+
+                if( rowIndex < 0) {
+                    adjust = minuteDiff;
+                    rowIndex = 0;
+                }
+                return { rowIndex, dayIndex, adjust };
             };
 
-            const { rowIndex, dayIndex } = getScheduleIndices(schedule.start_time);
-            
-            console.log(rowIndex, dayIndex, schedule.scheduled_time, schedule.study_subject.color, schedule.study_subject.subjectname, schedule.schedule_id);
-            createScheduleBar(rowIndex, dayIndex, schedule.scheduled_time, schedule.study_subject.color, schedule.study_subject.subjectname, schedule.schedule_id);
-            
+            const { rowIndex, dayIndex, adjust } = getScheduleIndices(schedule.start_time);
+            if( adjust + schedule.scheduled_time > 0) {
+                createScheduleBar(rowIndex, dayIndex, schedule.scheduled_time + adjust, schedule.study_subject.color, schedule.study_subject.subjectname, schedule.schedule_id);
+            }
+
+            const getNightScheduleIndices = (scheduleTime) => {
+
+                const scheduleHour = parseInt(scheduleTime.substring(11, 13));
+                const scheduleMinute = parseInt(scheduleTime.substring(14, 16));
+
+                if( scheduleHour >=6 ) {
+                    return { rowIndex: -1, dayIndex: -1, adjust: 0 };
+                }
+                
+                const startDayNum = currentStartDay.getDate();
+                const scheduleDayNum = new Date(scheduleTime).getDate();
+                const dayIndex = scheduleDayNum - startDayNum - 1;
+
+                const scheduleTimeInMinutes = (scheduleHour + 24) * 60 + scheduleMinute;
+                const startTimeInMinutes = startTime * 60;
+          
+                const minuteDiff = scheduleTimeInMinutes - startTimeInMinutes;
+                let rowIndex = Math.floor(minuteDiff / 30);
+
+                let adjust = 0;
+                if( rowIndex < 0) {
+                    adjust = minuteDiff;
+                    rowIndex = 0;
+                }
+                return { rowIndex, dayIndex, adjust };
+            };
+            const nightIndices = getNightScheduleIndices(schedule.start_time);
+            const rowIndex_night = nightIndices.rowIndex;
+            const dayIndex_night = nightIndices.dayIndex; 
+            const adjust_night = nightIndices.adjust;
+            if( rowIndex_night != -1 && dayIndex_night != -1 ) {
+                createScheduleBar(rowIndex_night, dayIndex_night, schedule.scheduled_time + adjust_night, schedule.study_subject.color, schedule.study_subject.subjectname, schedule.schedule_id);
+            }
         });
-        console.log('schedules is updated');
-        console.log(currentStartDay);
     };
 
     useEffect(() => {
-        console.log('schedules is updated');
         handleUpdateTimes();
     }, [schedules]);
 
@@ -360,9 +388,9 @@ function TimeTable() {
     };
 
     const handleStartWithMondayChange = (e) => {
-        console.log('startWithMonday is ', e.target.checked);
         setStartWithMonday(e.target.checked);
         localStorage.setItem('startWithMonday',e.target.checked);
+        fetchScheduleByDate(currentStartDay);
     };
 
     return (
@@ -383,7 +411,7 @@ function TimeTable() {
                     <input 
                         type="number" 
                         min="0" 
-                        max="23" 
+                        max="28" 
                         value={endTime}
                         onChange={handleEndTimeChange}
                     />
@@ -435,8 +463,10 @@ function TimeTable() {
             <div style={{ display: 'flex', alignItems: 'center', gap: '5px', marginBottom: '20px', justifyContent: 'center' }}>
                 <button 
                     onClick={() => {
-                        setCurrentStartDay(new Date(currentStartDay.getTime() - 7 * 86400000));
-                        fetchSchedule();
+                        const newDate = new Date(currentStartDay.getTime() - 7 * 86400000);
+                        console.log('newDate is ', newDate);
+                        setCurrentStartDay(newDate);
+                        fetchScheduleByDate(newDate);
                     }}
                     style={{ border: 'none', background: 'none', cursor: 'pointer', fontSize: '20px' }}
                 >
@@ -446,7 +476,7 @@ function TimeTable() {
                 <button
                     onClick={() => {
                         setCurrentStartDay(new Date(currentStartDay.getTime() + 7 * 86400000));
-                        fetchSchedule();
+                        fetchScheduleByDate(new Date(currentStartDay.getTime() + 7 * 86400000));
                     }}
                     style={{ border: 'none', background: 'none', cursor: 'pointer', fontSize: '20px' }}
                 >

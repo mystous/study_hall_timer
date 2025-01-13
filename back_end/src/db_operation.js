@@ -135,7 +135,7 @@ async function getTimeTableByDateRange(userId, startDate, endDate) {
     try {
         const startcondition = startDate.split('T')[0] + ' 00:00:00';
         const endcondition = endDate.split('T')[0] + ' 23:59:59';
-        
+
         const schedules = await TimeTable.findAll({
             where: {
                 user_id: userId,

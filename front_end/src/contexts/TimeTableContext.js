@@ -100,9 +100,10 @@ export const TimeTableProvider = ({ children }) => {
       if (!user) {
         return;
       }
-      let startDate = date;
-      let endDate = new Date(date);
-      endDate.setDate(endDate.getDate() + 7);
+      const startDate = date;
+      //startDate.setDate(startDate.getDate() - 1);
+      const endDate = new Date(date);
+      endDate.setDate(endDate.getDate() + 8);
 
       const response = await fetch(`${process.env.REACT_APP_BACKEND_URL}/api/v1/time_table`, {
         method: 'POST',

@@ -135,11 +135,16 @@ function TimeTable() {
         });
 
         schedules.forEach(schedule => {
+            console.log('schedule is ', schedule);
             const getScheduleIndices = (scheduleTime) => {
-                const startDayNum = currentStartDay.getDate();
-                const scheduleDayNum = new Date(scheduleTime).getDate();
+                // Calculate days since Jan 1, 1900
+                const startDayNum = Math.floor((currentStartDay.getTime() - new Date(1900, 0, 1).getTime()) / (24 * 60 * 60 * 1000));
+                const [year, month, day] = scheduleTime.split('T')[0].split('-');
+                const scheduleDayNum = Math.floor((new Date(year, month-1, day).getTime() - new Date(1900, 0, 1).getTime()) / (24 * 60 * 60 * 1000));
+                
                 const dayIndex = scheduleDayNum - startDayNum;
-
+                console.log('startDayNum is ', startDayNum, 'scheduleDayNum is ', scheduleDayNum, 'dayIndex is ', dayIndex);
+                
                 const scheduleHour = parseInt(scheduleTime.substring(11, 13));
                 const scheduleMinute = parseInt(scheduleTime.substring(14, 16));
 
@@ -159,6 +164,7 @@ function TimeTable() {
             };
 
             const { rowIndex, dayIndex, adjust } = getScheduleIndices(schedule.start_time);
+            console.log('rowIndex is ', rowIndex, 'dayIndex is ', dayIndex, 'adjust is ', adjust);
             if( adjust + schedule.scheduled_time > 0) {
                 createScheduleBar(rowIndex, dayIndex, schedule.scheduled_time + adjust, schedule.study_subject.color, schedule.study_subject.subjectname, schedule.schedule_id);
             }
@@ -200,6 +206,7 @@ function TimeTable() {
     };
 
     useEffect(() => {
+        console.log('schedules is ', schedules);
         handleUpdateTimes();
     }, [schedules]);
 

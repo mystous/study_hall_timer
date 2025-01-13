@@ -5,6 +5,7 @@ import './css/TimeTable.css';
 import { useAuth } from './common/AuthContext';
 import { useTimeTable } from './contexts/TimeTableContext';
 
+
 function TimeTable() {
     const { t } = useTranslation();
     const location = useLocation();
@@ -26,23 +27,20 @@ function TimeTable() {
             startWithMonday,
             updateTimes,
             setStartWithMonday,
-            setCurrentStartDaywithToday
+            setCurrentStartDaywithToday,
+            fetchSchedule
           } = useTimeTable();
-    let scheduleStartDay = getCurrentStartDay();
-    const savedStartWithMonday = localStorage.getItem('startWithMonday');
-    if (savedStartWithMonday !== null) {
-        setStartWithMonday(savedStartWithMonday === 'true');
-    }
 
-    useEffect(() => {
-        scheduleStartDay.setTime(getCurrentStartDay().getTime());
-        console.log('scheduleStartDay is ', scheduleStartDay);
-    }, [currentStartDay]);
 
     useEffect(() => {
         console.log('subjects is updated');
         handleUpdateTimes();
     }, [updateTimes]); 
+
+    useEffect(() => {
+        console.log('startWithMonday is updated');
+        setCurrentStartDaywithToday();
+    }, [startWithMonday]);
  
     const generateTimeSlots = () => {
         const slots = [];
@@ -132,48 +130,32 @@ function TimeTable() {
             });
         };
         removeExistingSchedules();
-        // Clear existing schedules
         const cells = document.querySelectorAll('.timetable td:not(:first-child)');
         cells.forEach(cell => {
             cell.innerHTML = '';
             cell.style.background = 'none';
         });
 
-        console.log('schedules is ', schedules);
-
+        //console.log('schedules is ', schedules);
       
         // Display schedules as bars
         schedules.forEach(schedule => {
-            console.log('schedule is ', schedule);
-            // Helper function to create schedule bar
-            
             const getScheduleIndices = (scheduleTime) => {
-                // Calculate days difference between schedule date and current start day
                 const startDayNum = currentStartDay.toISOString().split('T')[0].split('-')[2];
                 const scheduleDayNum = scheduleTime.split('T')[0].split('-')[2];
                 const dayIndex = parseInt(scheduleDayNum) - parseInt(startDayNum);
-                console.log('startDayNum is ', startDayNum, 'scheduleDayNum is ', scheduleDayNum, 'dayIndex is ', dayIndex);
-                // Calculate row index based on hour and minute relative to startTime
-                
-                // Extract hours and minutes from scheduleTime
+                //console.log('startDayNum is ', startDayNum, 'scheduleDayNum is ', scheduleDayNum, 'dayIndex is ', dayIndex);
+
                 const scheduleHour = parseInt(scheduleTime.split('T')[1].split(':')[0]);
                 const scheduleMinute = parseInt(scheduleTime.split('T')[1].split(':')[1]);
 
-                // Convert both times to minutes since midnight for easier comparison
                 const scheduleTimeInMinutes = scheduleHour * 60 + scheduleMinute;
                 const startTimeInMinutes = startTime * 60;
 
-                // Calculate difference in minutes
                 const minuteDiff = scheduleTimeInMinutes - startTimeInMinutes;
-
-                // Calculate rowIndex based on 30-minute intervals
-                // Each hour has 2 rows (one for :00 and one for :30)
                 const rowIndex = Math.floor(minuteDiff / 30);
 
-                console.log('minuteDiff is ', minuteDiff, 'rowIndex is ', rowIndex);
-       
-
-
+                //console.log('minuteDiff is ', minuteDiff, 'rowIndex is ', rowIndex);
                 
                 return { rowIndex, dayIndex };
             };
@@ -183,52 +165,15 @@ function TimeTable() {
             console.log(rowIndex, dayIndex, schedule.scheduled_time, schedule.study_subject.color, schedule.study_subject.subjectname, schedule.schedule_id);
             createScheduleBar(rowIndex, dayIndex, schedule.scheduled_time, schedule.study_subject.color, schedule.study_subject.subjectname, schedule.schedule_id);
             
-            // const startHour = parseInt(schedule.start_time.split(':')[0]);
-            // const endHour = parseInt(schedule.end_time.split(':')[0]);
-            // const dayIndex = startWithMonday ? 
-            //     (schedule.day_of_week === 0 ? 6 : schedule.day_of_week - 1) : 
-            //     schedule.day_of_week;
-            
-            // // Calculate row indices for start and end times
-            // const startRowIndex = (startHour - startTime) * 2;
-            // const endRowIndex = (endHour - startTime) * 2;
-            
-            // // Get all cells for this schedule
-            // for (let i = startRowIndex; i < endRowIndex; i++) {
-            //     const rowElement = document.querySelector(`.timetable tbody tr:nth-child(${i + 1})`);
-            //     if (rowElement) {
-            //         const cell = rowElement.children[dayIndex + 1]; // +1 because first column is time
-            //         if (cell) {
-            //             // Create schedule bar
-            //             cell.style.background = '#e3f2fd';
-            //             cell.style.position = 'relative';
-                        
-            //             // Only add text in first cell of schedule
-            //             if (i === startRowIndex) {
-            //                 const scheduleText = document.createElement('div');
-            //                 scheduleText.style.cssText = `
-            //                     position: absolute;
-            //                     top: 0;
-            //                     left: 0;
-            //                     right: 0;
-            //                     bottom: 0;
-            //                     display: flex;
-            //                     align-items: center;
-            //                     justify-content: center;
-            //                     font-size: 12px;
-            //                     padding: 2px;
-            //                     overflow: hidden;
-            //                     text-overflow: ellipsis;
-            //                     white-space: nowrap;
-            //                 `;
-            //                 scheduleText.textContent = schedule.subject_name;
-            //                 cell.appendChild(scheduleText);
-            //             }
-            //         }
-            //     }
-            // }
         });
+        console.log('schedules is updated');
+        console.log(currentStartDay);
     };
+
+    useEffect(() => {
+        console.log('schedules is updated');
+        handleUpdateTimes();
+    }, [schedules]);
 
     const handleTimeUpdate = (event) => {
         // Remove any existing dialogs first
@@ -415,8 +360,9 @@ function TimeTable() {
     };
 
     const handleStartWithMondayChange = (e) => {
-      setStartWithMonday(e.target.checked);
-        localStorage.setItem('startWithMonday',startWithMonday);
+        console.log('startWithMonday is ', e.target.checked);
+        setStartWithMonday(e.target.checked);
+        localStorage.setItem('startWithMonday',e.target.checked);
     };
 
     return (
@@ -447,7 +393,7 @@ function TimeTable() {
                         type="checkbox"
                         checked={startWithMonday}
                         onChange={(e) => {
-                            setStartWithMonday(e.target.checked);
+                            handleStartWithMondayChange(e);
                         }}
                     />
                     &nbsp;&nbsp;
@@ -468,7 +414,7 @@ function TimeTable() {
             </div>
             <div style={{ textAlign: 'center', marginBottom: '10px', marginTop: '20px', fontSize: '25px', fontWeight: 'bold', color: 'gray' }}>
                 <span>
-                    {scheduleStartDay.getFullYear()} W{String(Math.ceil((scheduleStartDay.getTime() - new Date(scheduleStartDay.getFullYear(), 0, 1).getTime()) / (7 * 86400000))).padStart(2, '0')}
+                    {currentStartDay.getFullYear()} W{String(Math.ceil((currentStartDay.getTime() - new Date(currentStartDay.getFullYear(), 0, 1).getTime()) / (7 * 86400000))).padStart(2, '0')}
                     <button
                         onClick={() => setCurrentStartDaywithToday()}
                         style={{
@@ -490,6 +436,7 @@ function TimeTable() {
                 <button 
                     onClick={() => {
                         setCurrentStartDay(new Date(currentStartDay.getTime() - 7 * 86400000));
+                        fetchSchedule();
                     }}
                     style={{ border: 'none', background: 'none', cursor: 'pointer', fontSize: '20px' }}
                 >
@@ -499,6 +446,7 @@ function TimeTable() {
                 <button
                     onClick={() => {
                         setCurrentStartDay(new Date(currentStartDay.getTime() + 7 * 86400000));
+                        fetchSchedule();
                     }}
                     style={{ border: 'none', background: 'none', cursor: 'pointer', fontSize: '20px' }}
                 >
@@ -512,23 +460,23 @@ function TimeTable() {
                             <th>{t('time')}</th>
                             {startWithMonday ? (
                                 <>
-                                    <th>{scheduleStartDay.getMonth() + 1}/{scheduleStartDay.getDate()}<br/>{t('monday')} </th>
-                                    <th>{new Date(scheduleStartDay.getTime() + 86400000).getMonth() + 1}/{new Date(scheduleStartDay.getTime() + 86400000).getDate()}<br/>{t('tuesday')} </th>
-                                    <th>{new Date(scheduleStartDay.getTime() + 86400000 * 2).getMonth() + 1}/{new Date(scheduleStartDay.getTime() + 86400000 * 2).getDate()}<br/>{t('wednesday')} </th>
-                                    <th>{new Date(scheduleStartDay.getTime() + 86400000 * 3).getMonth() + 1}/{new Date(scheduleStartDay.getTime() + 86400000 * 3).getDate()}<br/>{t('thursday')} </th>
-                                    <th>{new Date(scheduleStartDay.getTime() + 86400000 * 4).getMonth() + 1}/{new Date(scheduleStartDay.getTime() + 86400000 * 4).getDate()}<br/>{t('friday')} </th>
-                                    <th style={{color: 'blue'}}>{new Date(scheduleStartDay.getTime() + 86400000 * 5).getMonth() + 1}/{new Date(scheduleStartDay.getTime() + 86400000 * 5).getDate()}<br/>{t('saturday')} </th>
-                                    <th style={{color: 'red'}}>{new Date(scheduleStartDay.getTime() + 86400000 * 6).getMonth() + 1}/{new Date(scheduleStartDay.getTime() + 86400000 * 6).getDate()}<br/>{t('sunday')} </th>
+                                    <th>{currentStartDay.getMonth() + 1}/{currentStartDay.getDate()}<br/>{t('monday')} </th>
+                                    <th>{new Date(currentStartDay.getTime() + 86400000).getMonth() + 1}/{new Date(currentStartDay.getTime() + 86400000).getDate()}<br/>{t('tuesday')} </th>
+                                    <th>{new Date(currentStartDay.getTime() + 86400000 * 2).getMonth() + 1}/{new Date(currentStartDay.getTime() + 86400000 * 2).getDate()}<br/>{t('wednesday')} </th>
+                                    <th>{new Date(currentStartDay.getTime() + 86400000 * 3).getMonth() + 1}/{new Date(currentStartDay.getTime() + 86400000 * 3).getDate()}<br/>{t('thursday')} </th>
+                                    <th>{new Date(currentStartDay.getTime() + 86400000 * 4).getMonth() + 1}/{new Date(currentStartDay.getTime() + 86400000 * 4).getDate()}<br/>{t('friday')} </th>
+                                    <th style={{color: 'blue'}}>{new Date(currentStartDay.getTime() + 86400000 * 5).getMonth() + 1}/{new Date(currentStartDay.getTime() + 86400000 * 5).getDate()}<br/>{t('saturday')} </th>
+                                    <th style={{color: 'red'}}>{new Date(currentStartDay.getTime() + 86400000 * 6).getMonth() + 1}/{new Date(currentStartDay.getTime() + 86400000 * 6).getDate()}<br/>{t('sunday')} </th>
                                 </>
                             ) : (
                                 <>
-                                    <th style={{color: 'red'}}>{scheduleStartDay.getMonth() + 1}/{scheduleStartDay.getDate()}<br/>{t('sunday')} </th>
-                                    <th>{new Date(scheduleStartDay.getTime() + 86400000).getMonth() + 1}/{new Date(scheduleStartDay.getTime() + 86400000).getDate()}<br/>{t('monday')} </th>
-                                    <th>{new Date(scheduleStartDay.getTime() + 86400000 * 2).getMonth() + 1}/{new Date(scheduleStartDay.getTime() + 86400000 * 2).getDate()}<br/>{t('tuesday')} </th>
-                                    <th>{new Date(scheduleStartDay.getTime() + 86400000 * 3).getMonth() + 1}/{new Date(scheduleStartDay.getTime() + 86400000 * 3).getDate()}<br/>{t('wednesday')} </th>
-                                    <th>{new Date(scheduleStartDay.getTime() + 86400000 * 4).getMonth() + 1}/{new Date(scheduleStartDay.getTime() + 86400000 * 4).getDate()}<br/>{t('thursday')} </th>
-                                    <th>{new Date(scheduleStartDay.getTime() + 86400000 * 5).getMonth() + 1}/{new Date(scheduleStartDay.getTime() + 86400000 * 5).getDate()}<br/>{t('friday')} </th>
-                                    <th style={{color: 'blue'}}>{new Date(scheduleStartDay.getTime() + 86400000 * 6).getMonth() + 1}/{new Date(scheduleStartDay.getTime() + 86400000 * 6).getDate()}<br/>{t('saturday')} </th>
+                                    <th style={{color: 'red'}}>{currentStartDay.getMonth() + 1}/{currentStartDay.getDate()}<br/>{t('sunday')} </th>
+                                    <th>{new Date(currentStartDay.getTime() + 86400000).getMonth() + 1}/{new Date(currentStartDay.getTime() + 86400000).getDate()}<br/>{t('monday')} </th>
+                                    <th>{new Date(currentStartDay.getTime() + 86400000 * 2).getMonth() + 1}/{new Date(currentStartDay.getTime() + 86400000 * 2).getDate()}<br/>{t('tuesday')} </th>
+                                    <th>{new Date(currentStartDay.getTime() + 86400000 * 3).getMonth() + 1}/{new Date(currentStartDay.getTime() + 86400000 * 3).getDate()}<br/>{t('wednesday')} </th>
+                                    <th>{new Date(currentStartDay.getTime() + 86400000 * 4).getMonth() + 1}/{new Date(currentStartDay.getTime() + 86400000 * 4).getDate()}<br/>{t('thursday')} </th>
+                                    <th>{new Date(currentStartDay.getTime() + 86400000 * 5).getMonth() + 1}/{new Date(currentStartDay.getTime() + 86400000 * 5).getDate()}<br/>{t('friday')} </th>
+                                    <th style={{color: 'blue'}}>{new Date(currentStartDay.getTime() + 86400000 * 6).getMonth() + 1}/{new Date(currentStartDay.getTime() + 86400000 * 6).getDate()}<br/>{t('saturday')} </th>
                                 </>
                             )}
                         </tr>

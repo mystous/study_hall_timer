@@ -7,31 +7,62 @@ export const TimeTableProvider = ({ children }) => {
   const [timeTableData, setTimeTableData] = useState(null);
   const [subjects, setSubjects] = useState([]);
   const [schedules, setSchedules] = useState([]);
-  const [startWithMonday, setStartWithMonday] = useState(false);
+  const [startWithMonday, setStartWithMonday] = useState(() => {
+    const savedStartWithMonday = localStorage.getItem('startWithMonday');
+    return savedStartWithMonday ? savedStartWithMonday === 'true' : false;
+  });
   const [updateTimes, setUpdateTimes] = useState(0);
   const { user } = useAuth();
 
   const getMondayDate = (date) => {
     const d = new Date(date);
     const day = d.getDay();
-    const diff = d.getDate() - day + (day === 0 ? -6 : 1); // adjust when day is sunday
-    return new Date(d.setDate(diff));
+    
+    // If already Monday (day === 1), return date directly
+    if (day === 1) {
+      d.setHours(0, 0, 0, 0);
+      return d;
+    }
+
+    const diff = d.getDate() - day + (day === 0 ? -6 : 1); // 일요일인 경우 이전 주 월요일로
+    const monday = new Date(d.setDate(diff));
+    monday.setHours(0, 0, 0, 0); // 시간을 00:00:00으로 설정
+    return monday;
   };
 
   const getSundayDate = (date) => {
     const d = new Date(date);
     const day = d.getDay();
-    const diff = d.getDate() - day;
-    return new Date(d.setDate(diff));
+    
+    // If already Sunday (day === 0), return date directly
+    if (day === 0) {
+      d.setHours(0, 0, 0, 0);
+      return d;
+    }
+
+    const diff = d.getDate() - day; // 현재 날짜에서 요일만큼 빼면 이번주 일요일
+    const sunday = new Date(d.setDate(diff));
+    sunday.setHours(0, 0, 0, 0); // 시간을 00:00:00으로 설정
+    return sunday;
   };
 
-  const [currentStartDay, setCurrentStartDay] = useState(getMondayDate(new Date()));
+
+
+  const [currentStartDay, setCurrentStartDay] = useState(startWithMonday ? getMondayDate(new Date()) : getSundayDate(new Date()));
+
+  const setCurrentStartDaywithToday = () => {
+    setCurrentStartDay(startWithMonday ? getMondayDate(new Date()) : getSundayDate(new Date()));
+    console.log('currentStartDay is setted', currentStartDay);
+  }
 
   const getCurrentStartDay = () => {
     return currentStartDay;
   }
   const fetchSubjects = async () => {
     try {
+      if (!user) {
+        return;
+      }
       const response = await fetch(`${process.env.REACT_APP_BACKEND_URL}/api/v1/subjects`, {
         method: 'POST',
         headers: {
@@ -54,17 +85,13 @@ export const TimeTableProvider = ({ children }) => {
     }
   };
 
-  const setCurrentStartDaywithToday = () => {
-    setCurrentStartDay(startWithMonday ? getMondayDate(new Date()) : getSundayDate(new Date()));
-  }
-
-  useEffect(() => {
-    setCurrentStartDaywithToday();
-    fetchSchedule();
-  }, [startWithMonday]);
 
   const fetchSchedule = async () => {
     try {
+      if (!user) {
+        return;
+      }
+      console.log(user);
       const startDate = currentStartDay;
       const endDate = new Date(currentStartDay);
       endDate.setDate(endDate.getDate() + 6);
@@ -86,6 +113,8 @@ export const TimeTableProvider = ({ children }) => {
       if (data.success) {
         const result = data.schedules;
         setSchedules(result);
+        console.log('result is ', result);
+        console.log('startDate is ', startDate, 'endDate is ', endDate);
         // schedules.forEach(schedule => {
         //  console.log('Schedule:', schedule);
         // });
@@ -126,7 +155,8 @@ export const TimeTableProvider = ({ children }) => {
     setStartWithMonday,
     currentStartDay,
     setCurrentStartDay,
-    setCurrentStartDaywithToday
+    setCurrentStartDaywithToday,
+    fetchSchedule
   }
 
   return (

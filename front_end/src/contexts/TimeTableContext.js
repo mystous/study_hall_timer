@@ -174,6 +174,7 @@ export const TimeTableProvider = ({ children }) => {
     currentStartDay,
     setCurrentStartDay,
     setCurrentStartDaywithToday,
+    setSchedules,
     fetchSchedule,
     fetchScheduleByDate
   }

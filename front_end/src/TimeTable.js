@@ -28,6 +28,7 @@ function TimeTable() {
             updateTimes,
             setStartWithMonday,
             setCurrentStartDaywithToday,
+            setSchedules,
             fetchSchedule,
             fetchScheduleByDate
           } = useTimeTable();
@@ -36,6 +37,9 @@ function TimeTable() {
     useEffect(() => {
        handleUpdateTimes();
     }, [updateTimes]); 
+
+    const [subject_info, setSubjectInfo] = useState(null);
+    const [schedule_dirty_flag, setScheduleDirtyFlag] = useState(false);
 
     const generateTimeSlots = () => {
         const slots = [];
@@ -226,9 +230,9 @@ function TimeTable() {
             top: ${event.clientY}px;
             transform: none;
             background: white;
-            padding: 20px;
-            border-radius: 8px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            padding: 10px;
+            border-radius: 4px;
+            box-shadow: 0 1px 5px rgba(0,0,0,0.1);
             z-index: 1000;
             cursor: move;
             margin: 0;
@@ -291,6 +295,8 @@ function TimeTable() {
         const sortedUnitTimes = Array.from(new Set(Array.from(subjects).map(s => s.unit_time))).sort((a,b) => a - b);
         const heightMap = Object.fromEntries(sortedUnitTimes.map((time, i) => [time, baseHeight + (i * heightGap)]));
 
+        console.log('subject_info is ', subjects[0]);
+
         // Split subjects into left and right columns
         const leftSubjects = Array.from(subjects).slice(0, Math.ceil(subjects.size/2));
         const rightSubjects = Array.from(subjects).slice(Math.ceil(subjects.size/2));
@@ -311,21 +317,62 @@ function TimeTable() {
             const boldText = document.createElement('strong');
             boldText.textContent = `${subject.subjectname} - ${timeText}`;
             subjectEl.appendChild(boldText);
+            
+            // Set unique id and make draggable
+            subjectEl.id = `subject-${subject.id}`;
             subjectEl.draggable = true;
+            subjectEl.subject_info = subject;
+            
             subjectEl.style.cssText = `
-                padding: 10px;
-                margin: 5px 5px ${index === totalLength-1 ? '5px' : '15px'} 5px;
-                height: ${heightMap[subject.unit_time]}px;
+                padding: 5px;
+                margin: 2.5px 2.5px ${index === totalLength-1 ? '2.5px' : '7.5px'} 2.5px;
+                height: ${heightMap[subject.unit_time]/2}px;
                 background: ${subject.color || '#f0f0f0'};
-                border-radius: 4px;
+                border-radius: 2px;
                 cursor: move;
                 border: 1px solid gray;
                 display: flex;
                 align-items: center;
             `;
-            subjectEl.addEventListener('dragstart', (e) => {
-                e.dataTransfer.setData('text/plain', subject.subjectname);
+
+           
+
+            subjectEl.addEventListener('dragend', (e) => {
+                //subjectEl.style.opacity = '1';
+                //console.log('subjectEl is ', subjectEl);
+                //handleDragEnd(e, index, 0);
+                // Get element under cursor position and trigger mouseup
+                const element = document.elementFromPoint(e.clientX, e.clientY);
+                subjectEl.style.opacity = '1';
+                
+                if (element) {
+                    const mouseUpEvent = new MouseEvent('mouseup', {
+                        bubbles: true,
+                        cancelable: true,
+                        view: window,
+                        clientX: e.clientX,
+                        clientY: e.clientY
+                    });
+                    element.dispatchEvent(mouseUpEvent);
+                }
+
+                setSubjectInfo(null);
             });
+
+            subjectEl.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                
+                e.dataTransfer.dropEffect = 'move';
+            });
+
+            subjectEl.addEventListener('dragstart', (e) => {
+                e.dataTransfer.setData('text/plain', subjectEl.id);
+                e.dataTransfer.effectAllowed = 'move';
+                subjectEl.style.opacity = '0.5';
+                setSubjectInfo(subjectEl.subject_info);
+            });
+
+
             return subjectEl;
         };
 
@@ -400,6 +447,57 @@ function TimeTable() {
         fetchScheduleByDate(currentStartDay);
     };
 
+    const updateSchedule = () => {
+        setScheduleDirtyFlag(false);
+
+        console.log('updateSchedule is called');
+    };
+
+    const handleDragEnd = (e, index, cellIndex) => {
+        if (!subject_info) return;
+        // console.log('Drag ended on cell', index, cellIndex);
+        // Calculate day and time from indices
+        const currentDate = new Date(currentStartDay);
+        // console.log('currentDate is ', currentDate);
+        currentDate.setDate(currentDate.getDate() + cellIndex);
+        
+        // Calculate hours and minutes (30 min intervals)
+        const hours = Math.floor(startTime + (index / 2));
+        const minutes = (index % 2) * 30;
+        const timeString = `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
+        
+        const formattedDate = currentDate.toLocaleDateString();
+        // Convert date and time to yyyy-MM-dd HH:mm:ss format
+        // console.log('formattedDate is ', formattedDate);
+        // Handle Korean date format (YYYY. MM. DD.)
+        const [year, month, day] = formattedDate.split(". ").filter(part => part !== "").map(part => part.replace(".", ""));
+
+        const formattedDateTime = `${year}-${month.padStart(2,'0')}-${day.padStart(2,'0')}T${timeString}:00.000Z`;
+        console.log(`Selected time slot: ${formattedDateTime}`);
+        console.log('subject_info is ', subject_info);
+        // Create dummy schedule data
+        const newSchedule = {
+            schedule_id: -1, // ID for create new schedule
+            start_time: formattedDateTime,
+            scheduled_time: subject_info.unit_time,
+            subject_id: subject_info.subject_id,
+            study_subject: {
+                category:{
+                    category_name: "자기주도",
+                }, 
+                category_id: 1,
+                color: subject_info.color,
+                subject_id: subject_info.subject_id,
+                subjectname: subject_info.subjectname
+            }
+        };
+
+        // Add new schedule to existing schedules
+        setSchedules(prevSchedules => [...prevSchedules, newSchedule]);
+        setScheduleDirtyFlag(true);
+        handleUpdateTimes();
+    };
+
     return (
         <div className="timetable-container">
             {/* 시간 설정 UI */}
@@ -444,6 +542,25 @@ function TimeTable() {
                         onClick={(e) => handleTimeUpdate(e)}
                     >
                         {t('update')}
+                    </button>
+                    &nbsp;&nbsp;
+                    <button
+                        style={{
+                            padding: '5px 10px',
+                            backgroundColor: schedule_dirty_flag ? '#ff4444' : '#ffcccc',
+                            color: 'white',
+                            border: 'none', 
+                            borderRadius: '4px',
+                            cursor: schedule_dirty_flag ? 'pointer' : 'not-allowed',
+                            opacity: schedule_dirty_flag ? 1 : 0.6
+                        }}
+                        onClick={(e) => {
+                            if (schedule_dirty_flag) {
+                                updateSchedule();                            }
+                        }}
+                        disabled={!schedule_dirty_flag}
+                    >
+                        {t('updateSchedule')}
                     </button>
                 </div>
             </div>
@@ -522,13 +639,13 @@ function TimeTable() {
                         {generateTimeSlots().map((slot, index) => (
                             <tr key={index}>
                                 {slot.isFirstHalf && <td rowSpan="2">{slot.time}</td>}
-                                <td></td>
-                                <td></td>
-                                <td></td>
-                                <td></td>
-                                <td></td>
-                                <td></td>
-                                <td></td>
+                                <td className={`timetable-cell-${index}-0`} onMouseUp={(e) => handleDragEnd(e, index, 0)}></td>
+                                <td className={`timetable-cell-${index}-1`} onMouseUp={(e) => handleDragEnd(e, index, 1)}></td>
+                                <td className={`timetable-cell-${index}-2`} onMouseUp={(e) => handleDragEnd(e, index, 2)}></td>
+                                <td className={`timetable-cell-${index}-3`} onMouseUp={(e) => handleDragEnd(e, index, 3)}></td>
+                                <td className={`timetable-cell-${index}-4`} onMouseUp={(e) => handleDragEnd(e, index, 4)}></td>
+                                <td className={`timetable-cell-${index}-5`} onMouseUp={(e) => handleDragEnd(e, index, 5)}></td>
+                                <td className={`timetable-cell-${index}-6`} onMouseUp={(e) => handleDragEnd(e, index, 6)}></td>
                             </tr>
                         ))}
                     </tbody>

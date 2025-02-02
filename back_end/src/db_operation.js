@@ -163,6 +163,21 @@ async function getTimeTableByDateRange(userId, startDate, endDate) {
     }
 }
 
+async function addTimeTableSchedule(userId, subjectId, scheduledTime, startTime, dimmed = false) {
+    try {
+        const newSchedule = await TimeTable.create({
+            user_id: userId,
+            subject_id: subjectId,
+            scheduled_time: scheduledTime,
+            start_time: startTime,
+            dimmed: dimmed
+        });
+        return newSchedule;
+    } catch (error) {
+        console.error('Error adding schedule to time table:', error);
+        throw error;
+    }
+}
 
 async function testConn() {
    testConnection();
@@ -171,6 +186,6 @@ async function testConn() {
 module.exports = {
     saveUserTokens, getUserSalt, getUserPasswordHash, getUserGroups, 
     getGroupMembers, getGroups, getUsers, getUser, getSubjects, 
-    getTimeTableByDateRange, 
+    getTimeTableByDateRange, addTimeTableSchedule,
     testConn
 };

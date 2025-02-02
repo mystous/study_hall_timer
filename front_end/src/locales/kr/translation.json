@@ -15,6 +15,8 @@
   "hours": "시간",
   "thisWeek": "이번주",
   "startWithMonday": "월요일부터 시작",
+  "whatDay": "몇 번째 날인가요?",
+  "updateSchedule": "일정 업데이트",
   "nav": {
     "home": "홈",
     "timetable": "시간표",

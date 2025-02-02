@@ -11,6 +11,7 @@
     "timeFormat": "{{start}}-{{end}}",
     "backToHome": "返回主页",
     "update": "更新计划",
+    "updateSchedule": "更新计划",
     "thisWeek": "本周",
     "startWithMonday": "星期一开始",
     "nav": {

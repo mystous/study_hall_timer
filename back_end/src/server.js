@@ -345,20 +345,18 @@ app.put('/api/v1/time_table/add', async (req, res) => {
       return res;
     }
     const username = req.body.username;
-    const userId = req.body.userId;
-    const subjectId = req.body.subjectId;
-    const scheduledTime = req.body.scheduledTime;
-    const startTime = req.body.startTime;
-    const dimmed = req.body.dimmed;
+    const user = await db.getUser(username);
+    const userId = user.user_id;
+    const schedules = req.body.schedules;
 
-    await db.addTimeTableSchedule(userId, subjectId, scheduledTime, startTime, dimmed); 
+    await db.addTimeTableSchedules(userId, schedules); 
     addRequestLog(req, res, 'add_time_table_schedule', username, true);
     res.json({
       success: true,
       message: 'Time table schedule added successfully'
     });
   } catch (error) {
-    addRequestLog(req, res, 'add_time_table_schedule', username, false, 'Error adding time table schedule:' + error.message);
+    addRequestLog(req, res, 'add_time_table_schedule', req.body.username, false, 'Error adding time table schedule:' + error.message);
     console.error('Error adding time table schedule:', error);
     res.status(500).json({
       success: false, message: 'Server error occurred.' });

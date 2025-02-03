@@ -30,7 +30,8 @@ function TimeTable() {
             setCurrentStartDaywithToday,
             setSchedules,
             fetchSchedule,
-            fetchScheduleByDate
+            fetchScheduleByDate,
+            putSchedule
           } = useTimeTable();
 
 
@@ -448,6 +449,7 @@ function TimeTable() {
     };
 
     const updateSchedule = () => {
+        putSchedule();
         setScheduleDirtyFlag(false);
 
         console.log('updateSchedule is called');
@@ -568,7 +570,10 @@ function TimeTable() {
                 <span>
                     {currentStartDay.getFullYear()} W{String(Math.ceil((currentStartDay.getTime() - new Date(currentStartDay.getFullYear(), 0, 1).getTime()) / (7 * 86400000))).padStart(2, '0')}
                     <button
-                        onClick={() => setCurrentStartDaywithToday()}
+                        onClick={() => {
+                            setCurrentStartDaywithToday();
+                            fetchScheduleByDate(currentStartDay);
+                        }}
                         style={{
                             marginLeft: '15px',
                             padding: '3px 8px',

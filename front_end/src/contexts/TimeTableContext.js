@@ -133,6 +133,33 @@ export const TimeTableProvider = ({ children }) => {
     }
   };
 
+  const putSchedule = async () => {
+    try {
+
+      // Filter schedules that don't have schedule_id and create request body
+      const newSchedules = schedules.filter(schedule => schedule.schedule_id === -1).map(schedule => ({
+        subjectId: schedule.subject_id,
+        scheduledTime: schedule.scheduled_time,
+        startTime: schedule.start_time,
+        dimmed: false
+      }));
+
+      const response = await fetch(`${process.env.REACT_APP_BACKEND_URL}/api/v1/time_table/add`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('accessToken')}`
+        },
+        body: JSON.stringify({
+          username: user.username,
+          schedules: newSchedules
+        })
+      });
+    } catch (error) {
+      console.error('Error adding time table schedule:', error);
+    }
+  }
+
 
   const fetchSchedule = async () => {
     try {
@@ -176,7 +203,8 @@ export const TimeTableProvider = ({ children }) => {
     setCurrentStartDaywithToday,
     setSchedules,
     fetchSchedule,
-    fetchScheduleByDate
+    fetchScheduleByDate,
+    putSchedule
   }
 
   return (

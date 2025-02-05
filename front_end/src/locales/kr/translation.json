@@ -17,6 +17,7 @@
   "startWithMonday": "월요일부터 시작",
   "whatDay": "몇 번째 날인가요?",
   "updateSchedule": "일정 업데이트",
+  "deleteScheduleConfirm": "{{subject}}를 삭제 하시겠습니까?",
   "nav": {
     "home": "홈",
     "timetable": "시간표",
@@ -26,6 +27,7 @@
     "login": "로그인",
     "logout": "로그아웃",
     "admin": "관리자용 페이지"
+  
   },
   "logo": {
     "alt": "로고"

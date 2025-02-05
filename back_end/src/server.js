@@ -339,7 +339,7 @@ app.post('/api/v1/time_table', async (req, res) => {
   }
 });
 
-app.put('/api/v1/time_table/add', async (req, res) => {
+app.put('/api/v1/time_table', async (req, res) => {
   try {
     if (!validateAuthHeader(req, res)) {
       return res;
@@ -358,6 +358,27 @@ app.put('/api/v1/time_table/add', async (req, res) => {
   } catch (error) {
     addRequestLog(req, res, 'add_time_table_schedule', req.body.username, false, 'Error adding time table schedule:' + error.message);
     console.error('Error adding time table schedule:', error);
+    res.status(500).json({
+      success: false, message: 'Server error occurred.' });
+  }
+});
+
+app.delete('/api/v1/time_table', async (req, res) => {
+  try {
+    if (!validateAuthHeader(req, res)) {
+      return res;
+    }
+
+    const username = req.body.username;
+    const user = await db.getUser(username);
+    const userId = user.user_id;
+    const schedules = req.body.schedules;
+    console.log(schedules);
+    await db.deleteTimeTableSchedules(userId, schedules);
+    addRequestLog(req, res, 'delete_time_table_schedule', req.body.username, true);
+  } catch (error) {
+    addRequestLog(req, res, 'delete_time_table_schedule', req.body.username, false, 'Error deleting time table schedule:' + error.message);
+    console.error('Error deleting time table schedule:', error);
     res.status(500).json({
       success: false, message: 'Server error occurred.' });
   }

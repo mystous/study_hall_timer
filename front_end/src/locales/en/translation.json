@@ -16,6 +16,7 @@
   "thisWeek": "This Week",
   "startWithMonday": "Start with Monday",
   "updateSchedule": "Update Schedule",
+  "deleteScheduleConfirm": "Delete {{subject}}?",
   "nav": {
     "home": "Home",
     "timetable": "Time Table",

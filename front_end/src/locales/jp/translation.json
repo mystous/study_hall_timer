@@ -16,6 +16,7 @@
   "thisWeek": "今週",
   "startWithMonday": "月曜日から始める",
   "updateSchedule": "計画更新",
+  "deleteScheduleConfirm": "{{subject}}を削除 しますか？",
   "nav": {
     "home": "ホーム",
     "timetable": "時間割",

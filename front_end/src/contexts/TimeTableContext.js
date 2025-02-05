@@ -7,6 +7,9 @@ export const TimeTableProvider = ({ children }) => {
   const [timeTableData, setTimeTableData] = useState(null);
   const [subjects, setSubjects] = useState([]);
   const [schedules, setSchedules] = useState([]);
+  const [removedSchedules, setRemovedSchedules] = useState([]);
+  const [maxScheduleId, setMaxScheduleId] = useState(100000);
+  const [imageinaryScheduleIds, setImageinaryScheduleIds] = useState(100000);
   const [startWithMonday, setStartWithMonday] = useState(() => {
     const savedStartWithMonday = localStorage.getItem('startWithMonday');
     return savedStartWithMonday ? savedStartWithMonday === 'true' : false;
@@ -53,6 +56,9 @@ export const TimeTableProvider = ({ children }) => {
     setCurrentStartDay(startWithMonday ? getMondayDate(tuesday) : getSundayDate(tuesday));
   }, [startWithMonday]);
 
+  useEffect(() => {
+    console.log('removedSchedules is ', removedSchedules);
+  }, [removedSchedules]);
 
   const [currentStartDay, setCurrentStartDay] = useState(startWithMonday ? getMondayDate(new Date()) : getSundayDate(new Date()));
 
@@ -122,6 +128,11 @@ export const TimeTableProvider = ({ children }) => {
       if (data.success) {
         const result = data.schedules;
         setSchedules(result);
+        // Find max schedule_id and set max_schedule_id
+        const maxId = Math.max(...result.map(schedule => schedule.schedule_id), 0);
+        setMaxScheduleId(maxId * 10 + 1);
+        setImageinaryScheduleIds(maxId * 10 + 1);
+        setRemovedSchedules([]);
         // console.log('result is ', result);
         // console.log('startDate is ', startDate, 'endDate is ', endDate);
         // schedules.forEach(schedule => {
@@ -144,7 +155,7 @@ export const TimeTableProvider = ({ children }) => {
         dimmed: false
       }));
 
-      const response = await fetch(`${process.env.REACT_APP_BACKEND_URL}/api/v1/time_table/add`, {
+      const response = await fetch(`${process.env.REACT_APP_BACKEND_URL}/api/v1/time_table`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -157,6 +168,26 @@ export const TimeTableProvider = ({ children }) => {
       });
     } catch (error) {
       console.error('Error adding time table schedule:', error);
+    }
+  }
+
+  const deleteSchedule = async () => {
+
+    const scheduleIds = removedSchedules.map(schedule => schedule.schedule_id);
+
+    try {
+      const response = await fetch(`${process.env.REACT_APP_BACKEND_URL}/api/v1/time_table`, {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('accessToken')}`
+        },
+        body: JSON.stringify({
+          username: user.username, schedules: scheduleIds
+        })
+      });
+    } catch (error) {
+      console.error('Error deleting time table schedule:', error);
     }
   }
 
@@ -204,7 +235,13 @@ export const TimeTableProvider = ({ children }) => {
     setSchedules,
     fetchSchedule,
     fetchScheduleByDate,
-    putSchedule
+    putSchedule,
+    maxScheduleId,
+    setMaxScheduleId,
+    imageinaryScheduleIds,
+    removedSchedules,
+    setRemovedSchedules,
+    deleteSchedule
   }
 
   return (

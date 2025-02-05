@@ -141,7 +141,8 @@ async function getTimeTableByDateRange(userId, startDate, endDate) {
                 user_id: userId,
                 start_time: {
                     [Sequelize.Op.between]: [startcondition, endcondition]
-                }
+                },
+                dimmed: 0
             },
             attributes: ['schedule_id', 'subject_id', 'scheduled_time', 'start_time', 'dimmed'],
             include: [{
@@ -167,8 +168,40 @@ async function addTimeTableSchedules(userId, schedules) {
     try {
         console.log(userId);
         console.log(schedules);
+
+        // Create array of schedule objects with user_id
+        const scheduleRecords = schedules.map(schedule => ({
+            user_id: userId,
+            subject_id: schedule.subjectId,
+            scheduled_time: schedule.scheduledTime,
+            start_time: schedule.startTime,
+            dimmed: schedule.dimmed
+        }));
+
+        // Bulk insert all schedules
+        await TimeTable.bulkCreate(scheduleRecords);
     } catch (error) {
         console.error('Error adding schedule to time table:', error);
+        throw error;
+    }
+}
+
+async function deleteTimeTableSchedules(userId, schedules) {
+    try {
+        // Sequelize의 update는 한 번의 쿼리로 여러 레코드를 업데이트할 수 있습니다
+        await TimeTable.update(
+            { dimmed: 1 },
+            {
+                where: {
+                    user_id: userId,
+                    schedule_id: {
+                        [Sequelize.Op.in]: schedules
+                    }
+                }
+            }
+        );
+    } catch (error) {
+        console.error('Error deleting schedule from time table:', error);
         throw error;
     }
 }
@@ -180,6 +213,6 @@ async function testConn() {
 module.exports = {
     saveUserTokens, getUserSalt, getUserPasswordHash, getUserGroups, 
     getGroupMembers, getGroups, getUsers, getUser, getSubjects, 
-    getTimeTableByDateRange, addTimeTableSchedules,
+    getTimeTableByDateRange, addTimeTableSchedules, deleteTimeTableSchedules,
     testConn
 };

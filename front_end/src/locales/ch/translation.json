@@ -14,6 +14,7 @@
     "updateSchedule": "更新计划",
     "thisWeek": "本周",
     "startWithMonday": "星期一开始",
+    "deleteScheduleConfirm": "删除 {{subject}}?",
     "nav": {
         "home": "主页",
         "timetable": "时间表",

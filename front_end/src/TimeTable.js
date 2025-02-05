@@ -31,7 +31,13 @@ function TimeTable() {
             setSchedules,
             fetchSchedule,
             fetchScheduleByDate,
-            putSchedule
+            putSchedule,
+            maxScheduleId,
+            setMaxScheduleId,
+            imageinaryScheduleIds,
+            removedSchedules,
+            setRemovedSchedules,
+            deleteSchedule
           } = useTimeTable();
 
 
@@ -85,7 +91,7 @@ function TimeTable() {
 
     let cellId = 0;
 
-    const createScheduleBar = (startRowIndex, dayIndex, height, color, text, id) => {
+    const createScheduleBar = (startRowIndex, dayIndex, height, color, text, id,imageinary_schedule_id) => {
         if(dayIndex < 0) {
             return;
         }
@@ -97,7 +103,12 @@ function TimeTable() {
                 // Create schedule bar container
                 const scheduleBar = document.createElement('div');
                 scheduleBar.classList.add('schedule-bar');
-                scheduleBar.setAttribute('data-schedule-id', 'schedule-bar-' + id);
+                if(id != -1) {
+                    scheduleBar.setAttribute('data-schedule-id', 'schedule-bar-' + id);
+                }
+                else {
+                    scheduleBar.setAttribute('data-schedule-id', 'schedule-bar-' + imageinary_schedule_id);
+                }
                 scheduleBar.style.cssText = `
                     position: absolute;
                     top: 0;
@@ -121,7 +132,43 @@ function TimeTable() {
                 // Set cell position to relative for absolute positioning of bar
                 cell.style.position = 'relative';
                 cell.appendChild(scheduleBar);
+                  // Add double click handler
+                scheduleBar.addEventListener('dblclick', () => {
+                    // Create confirmation dialog
+                    scheduleBar.style.userSelect = 'none';
+                    const confirmDelete = window.confirm(t('deleteScheduleConfirm', { subject: text }));
+                    if (confirmDelete) {
+                        const scheduleId = parseInt(scheduleBar.getAttribute('data-schedule-id').split('-')[2]);
+                        //alert('scheduleId is ' + scheduleId);
+                        // Remove schedule from schedules array
+                        if( scheduleId < imageinaryScheduleIds) {
+                            setRemovedSchedules(prevRemovedSchedules => [
+                                ...prevRemovedSchedules,
+                                schedules.find(s => s.schedule_id === scheduleId)
+                            ]);
+
+                            setSchedules(prevSchedules => 
+                                prevSchedules.filter(s => 
+                                    s.schedule_id !== scheduleId
+                                )
+                            );
+                        }
+                        else {
+                            setSchedules(prevSchedules => 
+                                prevSchedules.filter(s => 
+                                    s.imageinary_schedule_id !== imageinary_schedule_id
+                                )
+                            );
+                        }
+
+                        
+                        setScheduleDirtyFlag(true);
+                    }
+                    
+                });
             }
+
+              
         }
     };
 
@@ -141,6 +188,7 @@ function TimeTable() {
 
         schedules.forEach(schedule => {
             console.log('schedule is ', schedule);
+            
             const getScheduleIndices = (scheduleTime) => {
                 // Calculate days since Jan 1, 1900
                 const startDayNum = Math.floor((currentStartDay.getTime() - new Date(1900, 0, 1).getTime()) / (24 * 60 * 60 * 1000));
@@ -171,7 +219,7 @@ function TimeTable() {
             const { rowIndex, dayIndex, adjust } = getScheduleIndices(schedule.start_time);
             console.log('rowIndex is ', rowIndex, 'dayIndex is ', dayIndex, 'adjust is ', adjust);
             if( adjust + schedule.scheduled_time > 0) {
-                createScheduleBar(rowIndex, dayIndex, schedule.scheduled_time + adjust, schedule.study_subject.color, schedule.study_subject.subjectname, schedule.schedule_id);
+                createScheduleBar(rowIndex, dayIndex, schedule.scheduled_time + adjust, schedule.study_subject.color, schedule.study_subject.subjectname, schedule.schedule_id, schedule.imageinary_schedule_id);
             }
 
             const getNightScheduleIndices = (scheduleTime) => {
@@ -205,7 +253,7 @@ function TimeTable() {
             const dayIndex_night = nightIndices.dayIndex; 
             const adjust_night = nightIndices.adjust;
             if( rowIndex_night != -1 && dayIndex_night != -1 ) {
-                createScheduleBar(rowIndex_night, dayIndex_night, schedule.scheduled_time + adjust_night, schedule.study_subject.color, schedule.study_subject.subjectname, schedule.schedule_id);
+                createScheduleBar(rowIndex_night, dayIndex_night, schedule.scheduled_time + adjust_night, schedule.study_subject.color, schedule.study_subject.subjectname, schedule.schedule_id, schedule.imageinary_schedule_id);
             }
         });
     };
@@ -339,9 +387,6 @@ function TimeTable() {
            
 
             subjectEl.addEventListener('dragend', (e) => {
-                //subjectEl.style.opacity = '1';
-                //console.log('subjectEl is ', subjectEl);
-                //handleDragEnd(e, index, 0);
                 // Get element under cursor position and trigger mouseup
                 const element = document.elementFromPoint(e.clientX, e.clientY);
                 subjectEl.style.opacity = '1';
@@ -362,7 +407,6 @@ function TimeTable() {
 
             subjectEl.addEventListener('dragover', (e) => {
                 e.preventDefault();
-                
                 e.dataTransfer.dropEffect = 'move';
             });
 
@@ -372,7 +416,6 @@ function TimeTable() {
                 subjectEl.style.opacity = '0.5';
                 setSubjectInfo(subjectEl.subject_info);
             });
-
 
             return subjectEl;
         };
@@ -457,10 +500,8 @@ function TimeTable() {
 
     const handleDragEnd = (e, index, cellIndex) => {
         if (!subject_info) return;
-        // console.log('Drag ended on cell', index, cellIndex);
         // Calculate day and time from indices
         const currentDate = new Date(currentStartDay);
-        // console.log('currentDate is ', currentDate);
         currentDate.setDate(currentDate.getDate() + cellIndex);
         
         // Calculate hours and minutes (30 min intervals)
@@ -469,17 +510,17 @@ function TimeTable() {
         const timeString = `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
         
         const formattedDate = currentDate.toLocaleDateString();
-        // Convert date and time to yyyy-MM-dd HH:mm:ss format
-        // console.log('formattedDate is ', formattedDate);
-        // Handle Korean date format (YYYY. MM. DD.)
         const [year, month, day] = formattedDate.split(". ").filter(part => part !== "").map(part => part.replace(".", ""));
 
         const formattedDateTime = `${year}-${month.padStart(2,'0')}-${day.padStart(2,'0')}T${timeString}:00.000Z`;
-        console.log(`Selected time slot: ${formattedDateTime}`);
-        console.log('subject_info is ', subject_info);
+        // For Debugging log
+        // console.log(`Selected time slot: ${formattedDateTime}`);
+        // console.log('subject_info is ', subject_info);
         // Create dummy schedule data
+                   
         const newSchedule = {
             schedule_id: -1, // ID for create new schedule
+            imageinary_schedule_id: maxScheduleId,
             start_time: formattedDateTime,
             scheduled_time: subject_info.unit_time,
             subject_id: subject_info.subject_id,
@@ -493,7 +534,7 @@ function TimeTable() {
                 subjectname: subject_info.subjectname
             }
         };
-
+        setMaxScheduleId(maxScheduleId + 1);
         // Add new schedule to existing schedules
         setSchedules(prevSchedules => [...prevSchedules, newSchedule]);
         setScheduleDirtyFlag(true);
@@ -558,7 +599,9 @@ function TimeTable() {
                         }}
                         onClick={(e) => {
                             if (schedule_dirty_flag) {
-                                updateSchedule();                            }
+                                updateSchedule();
+                                deleteSchedule();
+                                fetchScheduleByDate(currentStartDay);                            }
                         }}
                         disabled={!schedule_dirty_flag}
                     >

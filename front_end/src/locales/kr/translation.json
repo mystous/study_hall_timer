@@ -98,5 +98,9 @@
     "join_group": "가입 그룹",
     "edit": "수정",
     "save": "저장"
+  },
+  "menu": {
+    "edit": "수정",
+    "delete": "삭제"
   }
 }

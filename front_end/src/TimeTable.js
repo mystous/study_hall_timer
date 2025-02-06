@@ -133,37 +133,85 @@ function TimeTable() {
                 cell.style.position = 'relative';
                 cell.appendChild(scheduleBar);
                   // Add double click handler
+                scheduleBar.addEventListener('contextmenu', (e) => {
+                    e.preventDefault();
+
+                    // Remove any existing context menus
+                    const existingMenu = document.querySelector('.context-menu');
+                    if (existingMenu) {
+                        existingMenu.remove();
+                    }
+
+                    // Create context menu
+                    const contextMenu = document.createElement('div');
+                    contextMenu.className = 'context-menu';
+                    contextMenu.style.cssText = `
+                        position: fixed;
+                        z-index: 1000;
+                        background: white;
+                        border: 1px solid #ccc;
+                        border-radius: 4px;
+                        padding: 5px 0;
+                        box-shadow: 2px 2px 5px rgba(0,0,0,0.2);
+                        left: ${e.clientX}px;
+                        top: ${e.clientY}px;
+                    `;
+
+                    // Create menu items
+                    const menuItems = [
+                        { text: t('menu.edit'), action: () => {
+                            // Add edit functionality here
+                            alert('Edit functionality to be implemented');
+                        }},
+                        { text: t('menu.delete'), action: () => {
+                            const confirmDelete = window.confirm(t('deleteScheduleConfirm', { subject: text }));
+                            if (confirmDelete) {
+                                const scheduleId = parseInt(scheduleBar.getAttribute('data-schedule-id').split('-')[2]);
+                                if( scheduleId < imageinaryScheduleIds) {
+                                    setRemovedSchedules(prevRemovedSchedules => [
+                                        ...prevRemovedSchedules,
+                                        schedules.find(s => s.schedule_id === scheduleId)
+                                    ]);
+
+                                    setSchedules(prevSchedules => prevSchedules.filter(s => s.schedule_id !== scheduleId ));
+                                }
+                                else {
+                                    setSchedules(prevSchedules => prevSchedules.filter(s => s.imageinary_schedule_id !== imageinary_schedule_id));
+                                }
+                                
+                                setScheduleDirtyFlag(true);
+                            }
+                            contextMenu.remove();
+                        }}
+                    ];
+
+                    menuItems.forEach(item => {
+                        const menuItem = document.createElement('div');
+                        menuItem.textContent = item.text;
+                        menuItem.style.cssText = `
+                            padding: 5px 20px;
+                            cursor: pointer;
+                            &:hover {
+                                background: #f0f0f0;
+                            }
+                        `;
+                        menuItem.addEventListener('click', item.action);
+                        contextMenu.appendChild(menuItem);
+                    });
+
+                    document.body.appendChild(contextMenu);
+
+                    // Close menu when clicking outside
+                    document.addEventListener('click', function closeMenu(e) {
+                        if (!contextMenu.contains(e.target)) {
+                            contextMenu.remove();
+                            document.removeEventListener('click', closeMenu);
+                        }
+                    });
+                });
                 scheduleBar.addEventListener('dblclick', () => {
                     // Create confirmation dialog
                     scheduleBar.style.userSelect = 'none';
-                    const confirmDelete = window.confirm(t('deleteScheduleConfirm', { subject: text }));
-                    if (confirmDelete) {
-                        const scheduleId = parseInt(scheduleBar.getAttribute('data-schedule-id').split('-')[2]);
-                        //alert('scheduleId is ' + scheduleId);
-                        // Remove schedule from schedules array
-                        if( scheduleId < imageinaryScheduleIds) {
-                            setRemovedSchedules(prevRemovedSchedules => [
-                                ...prevRemovedSchedules,
-                                schedules.find(s => s.schedule_id === scheduleId)
-                            ]);
-
-                            setSchedules(prevSchedules => 
-                                prevSchedules.filter(s => 
-                                    s.schedule_id !== scheduleId
-                                )
-                            );
-                        }
-                        else {
-                            setSchedules(prevSchedules => 
-                                prevSchedules.filter(s => 
-                                    s.imageinary_schedule_id !== imageinary_schedule_id
-                                )
-                            );
-                        }
-
-                        
-                        setScheduleDirtyFlag(true);
-                    }
                     
                 });
             }
@@ -187,7 +235,7 @@ function TimeTable() {
         });
 
         schedules.forEach(schedule => {
-            console.log('schedule is ', schedule);
+            // console.log('schedule is ', schedule);
             
             const getScheduleIndices = (scheduleTime) => {
                 // Calculate days since Jan 1, 1900
@@ -196,7 +244,7 @@ function TimeTable() {
                 const scheduleDayNum = Math.floor((new Date(year, month-1, day).getTime() - new Date(1900, 0, 1).getTime()) / (24 * 60 * 60 * 1000));
                 
                 const dayIndex = scheduleDayNum - startDayNum;
-                console.log('startDayNum is ', startDayNum, 'scheduleDayNum is ', scheduleDayNum, 'dayIndex is ', dayIndex);
+                // console.log('startDayNum is ', startDayNum, 'scheduleDayNum is ', scheduleDayNum, 'dayIndex is ', dayIndex);
                 
                 const scheduleHour = parseInt(scheduleTime.substring(11, 13));
                 const scheduleMinute = parseInt(scheduleTime.substring(14, 16));
@@ -217,7 +265,7 @@ function TimeTable() {
             };
 
             const { rowIndex, dayIndex, adjust } = getScheduleIndices(schedule.start_time);
-            console.log('rowIndex is ', rowIndex, 'dayIndex is ', dayIndex, 'adjust is ', adjust);
+            // console.log('rowIndex is ', rowIndex, 'dayIndex is ', dayIndex, 'adjust is ', adjust);
             if( adjust + schedule.scheduled_time > 0) {
                 createScheduleBar(rowIndex, dayIndex, schedule.scheduled_time + adjust, schedule.study_subject.color, schedule.study_subject.subjectname, schedule.schedule_id, schedule.imageinary_schedule_id);
             }
@@ -259,7 +307,7 @@ function TimeTable() {
     };
 
     useEffect(() => {
-        console.log('schedules is ', schedules);
+        // console.log('schedules is ', schedules);
         handleUpdateTimes();
     }, [schedules]);
 
@@ -344,7 +392,7 @@ function TimeTable() {
         const sortedUnitTimes = Array.from(new Set(Array.from(subjects).map(s => s.unit_time))).sort((a,b) => a - b);
         const heightMap = Object.fromEntries(sortedUnitTimes.map((time, i) => [time, baseHeight + (i * heightGap)]));
 
-        console.log('subject_info is ', subjects[0]);
+        // console.log('subject_info is ', subjects[0]);
 
         // Split subjects into left and right columns
         const leftSubjects = Array.from(subjects).slice(0, Math.ceil(subjects.size/2));
@@ -383,8 +431,6 @@ function TimeTable() {
                 display: flex;
                 align-items: center;
             `;
-
-           
 
             subjectEl.addEventListener('dragend', (e) => {
                 // Get element under cursor position and trigger mouseup
@@ -495,7 +541,7 @@ function TimeTable() {
         putSchedule();
         setScheduleDirtyFlag(false);
 
-        console.log('updateSchedule is called');
+        // console.log('updateSchedule is called');
     };
 
     const handleDragEnd = (e, index, cellIndex) => {
@@ -636,7 +682,7 @@ function TimeTable() {
                 <button 
                     onClick={() => {
                         const newDate = new Date(currentStartDay.getTime() - 7 * 86400000);
-                        console.log('newDate is ', newDate);
+                        // console.log('newDate is ', newDate);
                         setCurrentStartDay(newDate);
                         fetchScheduleByDate(newDate);
                     }}

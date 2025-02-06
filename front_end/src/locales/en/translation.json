@@ -96,5 +96,9 @@
     "join_group": "Join Group",
     "edit": "Edit",
     "save": "Save"
+  },
+  "menu": {
+    "edit": "Edit",
+    "delete": "Delete"
   }
 }

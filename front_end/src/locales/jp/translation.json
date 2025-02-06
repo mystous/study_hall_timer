@@ -96,5 +96,9 @@
     "join_group": "グループ参加",
     "edit": "編集",
     "save": "保存"
+  },
+  "menu": {
+    "edit": "編集",
+    "delete": "削除"
   }
 }

@@ -244,9 +244,9 @@ app.post('/api/v1/admin/groups', async (req, res) => {
 
 app.post('/api/v1/admin/groups/:groupId/members', async (req, res) => {
   try {
-    console.log(req.body.username);
+    // console.log(req.body.username);
     const groupId = req.params.groupId;
-    console.log(groupId);
+    // console.log(groupId);
     const members = await db.getGroupMembers(groupId);
     console.log(members);
     addRequestLog(req, res, 'get_group_members', req.body.username, true);

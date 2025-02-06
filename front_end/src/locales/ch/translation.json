@@ -94,5 +94,9 @@
         "join_group": "加入群组",
         "edit": "编辑",
         "save": "保存"
+    },
+    "menu": {
+        "edit": "编辑",
+        "delete": "删除"
     }
 }

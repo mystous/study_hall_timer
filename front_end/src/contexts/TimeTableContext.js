@@ -8,6 +8,7 @@ export const TimeTableProvider = ({ children }) => {
   const [subjects, setSubjects] = useState([]);
   const [schedules, setSchedules] = useState([]);
   const [removedSchedules, setRemovedSchedules] = useState([]);
+  const [modifiedSchedules, setModifiedSchedules] = useState([]);
   const [maxScheduleId, setMaxScheduleId] = useState(100000);
   const [imageinaryScheduleIds, setImageinaryScheduleIds] = useState(100000);
   const [startWithMonday, setStartWithMonday] = useState(() => {
@@ -57,13 +58,13 @@ export const TimeTableProvider = ({ children }) => {
   }, [startWithMonday]);
 
   useEffect(() => {
-    console.log('removedSchedules is ', removedSchedules);
+    // console.log('removedSchedules is ', removedSchedules);
   }, [removedSchedules]);
 
   const [currentStartDay, setCurrentStartDay] = useState(startWithMonday ? getMondayDate(new Date()) : getSundayDate(new Date()));
 
   useEffect(() => {
-    console.log('useEffect : currentStartDay is ', currentStartDay);
+    // console.log('useEffect : currentStartDay is ', currentStartDay);
   }, [currentStartDay]);
 
   const setCurrentStartDaywithToday = () => {
@@ -241,7 +242,9 @@ export const TimeTableProvider = ({ children }) => {
     imageinaryScheduleIds,
     removedSchedules,
     setRemovedSchedules,
-    deleteSchedule
+    deleteSchedule,
+    modifiedSchedules,
+    setModifiedSchedules
   }
 
   return (

@@ -95,6 +95,18 @@ async function getGroupMembers(groupId) {
         throw error;
     }
 }
+async function getCategories(userId) {
+    try {
+        const categories = await Categories.findAll({ 
+            where: { user_id: userId },
+            attributes: ['category_id', 'category_name']
+        });
+        return categories;
+    } catch (error) {
+        console.error('Error fetching categories:', error);
+        throw error;
+    }
+}
 
 // 그룹 조회
 async function getGroups() {
@@ -206,13 +218,31 @@ async function deleteTimeTableSchedules(userId, schedules) {
     }
 }
 
+async function createSubject(userId, subject_name, category_id, subject_color, subject_unit_time) {
+    try {
+        await StudySubjects.create({ user_id: userId, subjectname: subject_name, unit_time: subject_unit_time, color: subject_color, visibility_level_id: 1, category_id: category_id });
+    } catch (error) {
+        console.error('Error creating subject:', error);
+        throw error;
+    }
+}
+
+async function getLastSubjectId(userId) {
+    try {
+        const lastSubject = await StudySubjects.findOne({ where: { user_id: userId }, order: [['subject_id', 'DESC']] });
+        return lastSubject ? lastSubject.subject_id : 0;
+    } catch (error) {
+        console.error('Error fetching last subject id:', error);
+        throw error;
+    }
+}   
+
 async function testConn() {
    testConnection();
 }
 
 module.exports = {
-    saveUserTokens, getUserSalt, getUserPasswordHash, getUserGroups, 
-    getGroupMembers, getGroups, getUsers, getUser, getSubjects, 
-    getTimeTableByDateRange, addTimeTableSchedules, deleteTimeTableSchedules,
+    saveUserTokens, getUserSalt, getUserPasswordHash, getUserGroups, getGroupMembers, getGroups, getUsers, getUser, getSubjects, getCategories,
+    getTimeTableByDateRange, addTimeTableSchedules, deleteTimeTableSchedules, createSubject, getLastSubjectId,
     testConn
 };

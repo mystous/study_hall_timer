@@ -39,3 +39,13 @@
 .back-button:hover {
   background-color: #373b44;
 } 
+
+.edit-button {
+  margin-top: 10px;
+  padding: 5px 10px;
+  background: #282c34;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}

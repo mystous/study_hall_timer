@@ -9,6 +9,7 @@ export const TimeTableProvider = ({ children }) => {
   const [schedules, setSchedules] = useState([]);
   const [removedSchedules, setRemovedSchedules] = useState([]);
   const [modifiedSchedules, setModifiedSchedules] = useState([]);
+  const [categories, setCategories] = useState([]);
   const [maxScheduleId, setMaxScheduleId] = useState(100000);
   const [imageinaryScheduleIds, setImageinaryScheduleIds] = useState(100000);
   const [startWithMonday, setStartWithMonday] = useState(() => {
@@ -81,14 +82,11 @@ export const TimeTableProvider = ({ children }) => {
         return;
       }
       const response = await fetch(`${process.env.REACT_APP_BACKEND_URL}/api/v1/subjects`, {
-        method: 'POST',
+        method: 'GET',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${localStorage.getItem('accessToken')}`
-        },
-        body: JSON.stringify({
-          username: user.username
-        })
+        }
       });
       const data = await response.json();
       if (data.success) {
@@ -102,6 +100,25 @@ export const TimeTableProvider = ({ children }) => {
     }
   };
 
+  const fetchCategories = async () => {
+    try {
+      const response = await fetch(`${process.env.REACT_APP_BACKEND_URL}/api/v1/categories`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('accessToken')}`
+        }
+      });
+      const data = await response.json();
+      if (data.success) {
+        const result = data.categories;
+        setCategories(result);
+      }
+    } catch (error) {
+      console.error('Error fetching categories:', error);
+    }
+  }
+
   const fetchScheduleByDate = async (date) => {
     try {
       if (!user) {
@@ -112,17 +129,12 @@ export const TimeTableProvider = ({ children }) => {
       const endDate = new Date(date);
       endDate.setDate(endDate.getDate() + 8);
 
-      const response = await fetch(`${process.env.REACT_APP_BACKEND_URL}/api/v1/time_table`, {
-        method: 'POST',
+      const response = await fetch(`${process.env.REACT_APP_BACKEND_URL}/api/v1/time_table?startDate=${startDate.toISOString()}&endDate=${endDate.toISOString()}`, {
+        method: 'GET',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${localStorage.getItem('accessToken')}`
-        },
-        body: JSON.stringify({
-          startDate: startDate.toISOString(),
-          endDate: endDate.toISOString(),
-          username: user.username
-        })
+        }
       });
 
       const data = await response.json();
@@ -134,18 +146,13 @@ export const TimeTableProvider = ({ children }) => {
         setMaxScheduleId(maxId * 10 + 1);
         setImageinaryScheduleIds(maxId * 10 + 1);
         setRemovedSchedules([]);
-        // console.log('result is ', result);
-        // console.log('startDate is ', startDate, 'endDate is ', endDate);
-        // schedules.forEach(schedule => {
-        //  console.log('Schedule:', schedule);
-        // });
       }
     } catch (error) {
       console.error('Error fetching schedule:', error);
     }
   };
 
-  const putSchedule = async () => {
+  const createSchedule = async () => {
     try {
 
       // Filter schedules that don't have schedule_id and create request body
@@ -156,8 +163,9 @@ export const TimeTableProvider = ({ children }) => {
         dimmed: false
       }));
 
+      console.log(newSchedules);
       const response = await fetch(`${process.env.REACT_APP_BACKEND_URL}/api/v1/time_table`, {
-        method: 'PUT',
+        method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${localStorage.getItem('accessToken')}`
@@ -169,6 +177,28 @@ export const TimeTableProvider = ({ children }) => {
       });
     } catch (error) {
       console.error('Error adding time table schedule:', error);
+    }
+  }
+
+  const createSubject = async (subject_name, category_id, subject_color, subject_unit_time) => {
+    try {
+      const response = await fetch(`${process.env.REACT_APP_BACKEND_URL}/api/v1/subjects`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('accessToken')}`
+        },
+        body: JSON.stringify({
+          username: user.username, subject_name: subject_name, category_id: category_id, subject_color: subject_color, subject_unit_time: subject_unit_time
+        })
+      });
+      const data = await response.json();
+      if (data.success) {
+        fetchSubjects();
+      }
+    
+    } catch (error) {
+      console.error('Error creating subject:', error);
     }
   }
 
@@ -192,7 +222,6 @@ export const TimeTableProvider = ({ children }) => {
     }
   }
 
-
   const fetchSchedule = async () => {
     try {
       fetchScheduleByDate(currentStartDay);
@@ -201,10 +230,10 @@ export const TimeTableProvider = ({ children }) => {
     }
   };
 
-
   const initializeData = async () => {
         fetchSubjects();
         fetchSchedule();
+        fetchCategories();
         setUpdateTimes(updateTimes + 1);
         // console.log('updateTimes is ', updateTimes);
   };
@@ -236,7 +265,7 @@ export const TimeTableProvider = ({ children }) => {
     setSchedules,
     fetchSchedule,
     fetchScheduleByDate,
-    putSchedule,
+    createSchedule,
     maxScheduleId,
     setMaxScheduleId,
     imageinaryScheduleIds,
@@ -244,7 +273,12 @@ export const TimeTableProvider = ({ children }) => {
     setRemovedSchedules,
     deleteSchedule,
     modifiedSchedules,
-    setModifiedSchedules
+    setModifiedSchedules,
+    categories,
+    fetchCategories, 
+    fetchSubjects,
+    createSubject,
+    setSubjects
   }
 
   return (

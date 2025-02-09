@@ -15,6 +15,13 @@
     "thisWeek": "本周",
     "startWithMonday": "星期一开始",
     "deleteScheduleConfirm": "删除 {{subject}}?",
+    "cancel": "取消",
+    "save": "保存",
+    "addSubject": "添加科目",
+    "close": "关闭",
+    "color": "颜色: ",
+    "unitTime": "单位时间: ",
+    "categories": "类别: ",
     "nav": {
         "home": "主页",
         "timetable": "时间表",
@@ -98,5 +105,11 @@
     "menu": {
         "edit": "编辑",
         "delete": "删除"
+    },
+    "edit": {
+        "title": "编辑",
+        "subject": "科目",
+        "time": "时间",
+        "invalidTime": "时间必须至少为1分钟。"
     }
 }

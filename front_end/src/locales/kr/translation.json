@@ -18,6 +18,13 @@
   "whatDay": "몇 번째 날인가요?",
   "updateSchedule": "일정 업데이트",
   "deleteScheduleConfirm": "{{subject}}를 삭제 하시겠습니까?",
+  "cancel": "취소",
+  "save": "저장",
+  "addSubject": "과목 추가",
+  "close": "닫기",
+  "color": "색상: ",
+  "unitTime": "단위 시간: ",
+  "categories": "카테고리: ",
   "nav": {
     "home": "홈",
     "timetable": "시간표",
@@ -102,5 +109,11 @@
   "menu": {
     "edit": "수정",
     "delete": "삭제"
+  },
+  "edit": {
+    "title": "수정",
+    "subject": "과목",
+    "time": "시간",
+    "invalidTime": "시간은 1분 이상이어야 합니다."
   }
 }

@@ -17,6 +17,13 @@
   "startWithMonday": "月曜日から始める",
   "updateSchedule": "計画更新",
   "deleteScheduleConfirm": "{{subject}}を削除 しますか？",
+  "addSubject": "科目追加",
+  "close": "閉じる",
+  "cancel": "キャンセル",
+  "save": "保存",
+  "color": "色: ",
+  "unitTime": "単位時間: ",
+  "categories": "カテゴリ: ",
   "nav": {
     "home": "ホーム",
     "timetable": "時間割",
@@ -100,5 +107,11 @@
   "menu": {
     "edit": "編集",
     "delete": "削除"
+  },
+  "edit": {
+    "title": "編集",
+    "subject": "科目",
+    "time": "時間",
+    "invalidTime": "時間は1分以上でなければなりません。"
   }
 }

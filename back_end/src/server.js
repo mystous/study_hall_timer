@@ -49,6 +49,12 @@ app.listen(port, () => {
   console.log(`Server is running on http://localhost:${port}`);
 });
 
+function getUsernameFromToken(authHeader) {
+  const token = authHeader.split(' ')[1];
+  const decoded = jwt.verify(token, JWT_SECRET);
+  return decoded.username;
+}
+
 function validateAuthHeaderWithUsername(req, res, usernameObj) {
   const authHeader = req.headers.authorization;
   if (!authHeader || !authHeader.startsWith('Bearer ')) {
@@ -266,13 +272,13 @@ app.post('/api/v1/admin/groups/:groupId/members', async (req, res) => {
   }
 });
 
-app.post('/api/v1/subjects', async (req, res) => {
+app.get('/api/v1/subjects', async (req, res) => {
   try {
     if (!validateAuthHeader(req, res)) {
       return res;
     }
 
-    const username = req.body.username;
+    const username = getUsernameFromToken(req.headers.authorization);
 
     const user = await db.getUser(username);
 
@@ -303,16 +309,48 @@ app.post('/api/v1/subjects', async (req, res) => {
   }
 });
 
-app.post('/api/v1/time_table', async (req, res) => {
+app.post('/api/v1/subjects', async (req, res) => {
   try {
     if (!validateAuthHeader(req, res)) {
       return res;
     }
+
     const username = req.body.username;
+    const user = await db.getUser(username);
+    const userId = user.user_id;
+    const subject_name = req.body.subject_name;
+    const category_id = req.body.category_id;
+    const subject_color = req.body.subject_color;
+    const subject_unit_time = req.body.subject_unit_time;
+
+    await db.createSubject(userId, subject_name, category_id, subject_color, subject_unit_time);
+    const lastSubject = await db.getLastSubjectId(userId);
+    addRequestLog(req, res, 'create_subject', username, true);
+    res.json({
+      success: true,
+      //message: 'Subject created successfully',
+      subject_id: lastSubject
+    });
+  } catch (error) {
+    addRequestLog(req, res, 'create_subject', req.body.username, false, 'Error creating subject:' + error.message);
+    console.error('Error creating subject:', error);
+    res.status(500).json({
+      success: false, message: 'Server error occurred.' });
+  }
+});
+
+app.get('/api/v1/time_table', async (req, res) => {
+  try {
+    if (!validateAuthHeader(req, res)) {
+      return res;
+    }
+
+    // Get username from auth token
+    const username = getUsernameFromToken(req.headers.authorization);
 
     const user = await db.getUser(username);
-    const startDate = req.body.startDate;
-    const endDate = req.body.endDate;
+    const startDate = req.query.startDate;
+    const endDate = req.query.endDate;
     const timeTable = await db.getTimeTableByDateRange(user.user_id, startDate, endDate);
     if(!timeTable) {
     
@@ -339,7 +377,7 @@ app.post('/api/v1/time_table', async (req, res) => {
   }
 });
 
-app.put('/api/v1/time_table', async (req, res) => {
+app.post('/api/v1/time_table', async (req, res) => {
   try {
     if (!validateAuthHeader(req, res)) {
       return res;
@@ -348,6 +386,8 @@ app.put('/api/v1/time_table', async (req, res) => {
     const user = await db.getUser(username);
     const userId = user.user_id;
     const schedules = req.body.schedules;
+
+    console.log(schedules);
 
     await db.addTimeTableSchedules(userId, schedules); 
     addRequestLog(req, res, 'add_time_table_schedule', username, true);
@@ -381,6 +421,23 @@ app.delete('/api/v1/time_table', async (req, res) => {
     console.error('Error deleting time table schedule:', error);
     res.status(500).json({
       success: false, message: 'Server error occurred.' });
+  }
+});
+
+app.get('/api/v1/categories', async (req, res) => {
+  try {
+    if (!validateAuthHeader(req, res)) {
+      return res;
+    }
+
+    const username = getUsernameFromToken(req.headers.authorization);
+    const user = await db.getUser(username);
+    const categories = await db.getCategories(user.user_id);
+    addRequestLog(req, res, 'get_categories', req.body.username, true);
+    res.json({ success: true, categories: categories });
+  } catch (error) {
+    addRequestLog(req, res, 'get_categories', req.body.username, false, 'Error getting categories:' + error.message);
+    res.status(500).json({ success: false, message: 'Server error occurred.' });
   }
 });
 

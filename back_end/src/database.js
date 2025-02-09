@@ -132,8 +132,7 @@ const StudySubjects = sequelize.define('study_subjects', {
         type: Sequelize.INTEGER,
         primaryKey: true,
         autoIncrement: true,
-        allowNull: false,
-        defaultValue: Sequelize.UUIDV4
+        allowNull: false
     },
     user_id: {
         type: Sequelize.INTEGER,
@@ -152,6 +151,10 @@ const StudySubjects = sequelize.define('study_subjects', {
         allowNull: false
     },
     visibility_level_id: {
+        type: Sequelize.INTEGER,
+        allowNull: false
+    }, 
+    category_id: {
         type: Sequelize.INTEGER,
         allowNull: false
     }
@@ -216,6 +219,10 @@ const Categories = sequelize.define('categories', {
     },
     category_name: {
         type: Sequelize.STRING(255),
+        allowNull: false
+    }, 
+    user_id: {
+        type: Sequelize.INTEGER,
         allowNull: false
     }
 }, {

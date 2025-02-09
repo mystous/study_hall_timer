@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 import './css/TimeTable.css';
 import { useAuth } from './common/AuthContext';
 import { useTimeTable } from './contexts/TimeTableContext';
+import SubjectAdd from './SubjectAdd';
 
 
 function TimeTable() {
@@ -31,19 +32,24 @@ function TimeTable() {
             setSchedules,
             fetchSchedule,
             fetchScheduleByDate,
-            putSchedule,
+            createSchedule,
             maxScheduleId,
             setMaxScheduleId,
             imageinaryScheduleIds,
             removedSchedules,
             setRemovedSchedules,
-            deleteSchedule
+            deleteSchedule,
+            categories,
+            fetchSubjects,
+            createSubject,
+            setSubjects
           } = useTimeTable();
 
 
     useEffect(() => {
        handleUpdateTimes();
     }, [updateTimes]); 
+
 
     const [subject_info, setSubjectInfo] = useState(null);
     const [schedule_dirty_flag, setScheduleDirtyFlag] = useState(false);
@@ -113,13 +119,13 @@ function TimeTable() {
                     position: absolute;
                     top: 0;
                     left: 10%;
-                    width: 40%;
+                    width: 80%;
                     height: ${height/30 * 47}px;
                     background-color: ${color};
                     display: flex;
                     align-items: center;
                     justify-content: center;
-                    font-size: 12px;
+                    font-size: 15px;
                     padding: 0px;
                     overflow: auto;
                     word-wrap: break-word;
@@ -159,30 +165,124 @@ function TimeTable() {
 
                     // Create menu items
                     const menuItems = [
-                        { text: t('menu.edit'), action: () => {
-                            // Add edit functionality here
-                            alert('Edit functionality to be implemented');
-                        }},
-                        { text: t('menu.delete'), action: () => {
-                            const confirmDelete = window.confirm(t('deleteScheduleConfirm', { subject: text }));
-                            if (confirmDelete) {
-                                const scheduleId = parseInt(scheduleBar.getAttribute('data-schedule-id').split('-')[2]);
-                                if( scheduleId < imageinaryScheduleIds) {
-                                    setRemovedSchedules(prevRemovedSchedules => [
-                                        ...prevRemovedSchedules,
-                                        schedules.find(s => s.schedule_id === scheduleId)
-                                    ]);
+                        {
+                            text: t('menu.edit'),
+                            action: () => {
+                                contextMenu.remove();
+                                // Create edit dialog
+                                const editDialog = document.createElement('div');
+                                editDialog.style.cssText = `
+                                    position: fixed;
+                                    top: 50%;
+                                    left: 50%;
+                                    transform: translate(-50%, -50%);
+                                    background: white;
+                                    padding: 20px;
+                                    border-radius: 8px;
+                                    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+                                    z-index: 1001;
+                                `;
 
-                                    setSchedules(prevSchedules => prevSchedules.filter(s => s.schedule_id !== scheduleId ));
+                                const scheduleId = parseInt(scheduleBar.getAttribute('data-schedule-id').split('-')[2]);
+                                console.log('scheduleId is ', scheduleId);
+                                let schedule;
+                                if( scheduleId < imageinaryScheduleIds) {
+                                    schedule = schedules.find(s => s.schedule_id === scheduleId);
                                 }
                                 else {
-                                    setSchedules(prevSchedules => prevSchedules.filter(s => s.imageinary_schedule_id !== imageinary_schedule_id));
+                                    schedule = schedules.find(s => s.imageinary_schedule_id === scheduleId);
                                 }
-                                
-                                setScheduleDirtyFlag(true);
+
+                            console.log('schedule is ', schedule.scheduled_time);
+                            
+                            // Create content
+                            const subject = schedule.study_subject.subjectname;
+                 
+
+                            editDialog.innerHTML = `
+                                <h3 style="margin-top:0">${t('edit.title')}</h3>
+                                <p>${t('edit.subject')}: ${subject}</p>
+                                <div style="margin:10px 0">
+                                    <div>
+                                        <label for="timeInput">${t('edit.time')}:</label>
+                                        <input 
+                                            id="timeInput"
+                                            type="number" 
+                                            value="${schedule.scheduled_time}"
+                                            min="1"
+                                            style="width: 60px; margin-left: 10px"
+                                        />
+                                        <span>${t('minutes')}</span>
+                                    </div>
+                                </div>
+                                <div style="text-align:right;margin-top:20px">
+                                    <button id="cancel-edit" className="edit-button">${t('cancel')}</button>
+                                    <button id="save-edit" className="edit-button" style="margin-left:10px">${t('save')}</button>
+                                </div>
+                            `;
+
+                            document.body.appendChild(editDialog);
+
+                            // Add event listeners
+                            document.getElementById('cancel-edit').onclick = () => {
+                                editDialog.remove();
+                            };
+
+                            document.getElementById('save-edit').onclick = () => {
+                                const newTime = parseInt(editDialog.querySelector('input').value);
+                                if (newTime < 1) {
+                                    alert(t('edit.invalidTime'));
+                                    return;
+                                }
+
+                                    if( scheduleId < imageinaryScheduleIds) {
+                                        
+                                    
+                                    setSchedules(prevSchedules => 
+                                        prevSchedules.map(s => 
+                                            (s.schedule_id === scheduleId ) 
+                                                ? {...s, scheduled_time: newTime, modified: true}
+                                                : s
+                                        )
+                                    );
+                                    }
+                                    else {
+                                        setSchedules(prevSchedules => 
+                                            prevSchedules.map(s => 
+                                                (s.imageinary_schedule_id === scheduleId) 
+                                                    ? {...s, scheduled_time: newTime}
+                                                    : s
+                                            )
+                                        );
+                                    }
+                                    setScheduleDirtyFlag(true);
+                                    editDialog.remove();
+                                };
                             }
-                            contextMenu.remove();
-                        }}
+                        },
+                        {
+                            text: t('menu.delete'),
+                            action: () => {
+                                const confirmDelete = window.confirm(t('deleteScheduleConfirm', { subject: text }));
+                                if (confirmDelete) {
+                                    const scheduleId = parseInt(scheduleBar.getAttribute('data-schedule-id').split('-')[2]);
+                                    if( scheduleId < imageinaryScheduleIds) {
+                                        setRemovedSchedules(prevRemovedSchedules => [
+                                            ...prevRemovedSchedules,
+                                            schedules.find(s => s.schedule_id === scheduleId)
+                                        ]);
+
+                                        setSchedules(prevSchedules => prevSchedules.filter(s => s.schedule_id !== scheduleId ));
+                                    }
+                                    else {
+                                        setSchedules(prevSchedules => prevSchedules.filter(s => s.imageinary_schedule_id !== imageinary_schedule_id));
+                                    }
+                                    
+                                    setScheduleDirtyFlag(true);
+                                }
+                                contextMenu.remove();
+                            }
+                        }
                     ];
 
                     menuItems.forEach(item => {
@@ -311,80 +411,111 @@ function TimeTable() {
         handleUpdateTimes();
     }, [schedules]);
 
-    const handleTimeUpdate = (event) => {
+    const handleTimeUpdate = (event, refresh = false) => {
         // Remove any existing dialogs first
+        console.log('Study_subjects is ', subjects);
         const existingDialog = document.querySelector('.subject-selection-dialog');
-        if (existingDialog) {
+        if (existingDialog && refresh !== true) {
             return;
         }
 
-        // Open popup dialog for subject selection
-        const dialog = document.createElement('div');
-        dialog.className = 'subject-selection-dialog';
-        dialog.style.cssText = `
-            position: absolute;
-            left: ${event.clientX}px;
-            top: ${event.clientY}px;
-            transform: none;
-            background: white;
-            padding: 10px;
-            border-radius: 4px;
-            box-shadow: 0 1px 5px rgba(0,0,0,0.1);
-            z-index: 1000;
-            cursor: move;
-            margin: 0;
-            user-select: none;
-            -webkit-user-select: none;
-            -moz-user-select: none;
-            -ms-user-select: none;
-        `;
+        let dialog;
+        let subjectsContainer;
 
-        // Make dialog draggable
-        let isDragging = false;
-        let currentX;
-        let currentY;
-        let initialX;
-        let initialY;
-        let xOffset = 0;
-        let yOffset = 0;
+        if(refresh === false) {
+            dialog = document.createElement('div');
+            dialog.className = 'subject-selection-dialog';
+            dialog.style.cssText = `
+                position: absolute;
+                left: ${event.clientX}px;
+                top: ${event.clientY}px;
+                transform: none;
+                background: white;
+                padding: 10px;
+                border-radius: 4px;
+                box-shadow: 0 1px 5px rgba(0,0,0,0.1);
+                z-index: 100;
+                cursor: move;
+                margin: 0;
+                user-select: none;
+                -webkit-user-select: none;
+                -moz-user-select: none;
+                -ms-user-select: none;
+            `;
 
-        dialog.addEventListener('mousedown', (e) => {
-            initialX = e.clientX - xOffset;
-            initialY = e.clientY - yOffset;
-            if (e.target === dialog) {
-                isDragging = true;
+            
+            // Make dialog draggable
+            let isDragging = false;
+            let currentX;
+            let currentY;
+            let initialX;
+            let initialY;
+            let xOffset = 0;
+            let yOffset = 0;
+
+            dialog.addEventListener('mousedown', (e) => {
+                initialX = e.clientX - xOffset;
+                initialY = e.clientY - yOffset;
+                if (e.target === dialog) {
+                    isDragging = true;
+                }
+            });
+
+            const mouseMoveHandler = (e) => {
+                if (isDragging) {
+                    e.preventDefault();
+                    currentX = e.clientX - initialX;
+                    currentY = e.clientY - initialY;
+                    xOffset = currentX;
+                    yOffset = currentY;
+                    dialog.style.transform = `translate(${currentX}px, ${currentY}px)`;
+                }
+            };
+
+            const mouseUpHandler = () => {
+                isDragging = false;
+            };
+
+            // Add event listeners for dragging
+            document.addEventListener('mousemove', mouseMoveHandler);
+            document.addEventListener('mouseup', mouseUpHandler);
+
+                            // Add subject options that can be dragged
+            // Create container for 2 columns
+            subjectsContainer = document.createElement('div');
+            subjectsContainer.id = 'subjects-container';
+            subjectsContainer.style.cssText = `
+                display: grid;
+                grid-template-columns: 1fr 1fr;
+                gap: 1px;
+                width: 100%;
+            `;
+            dialog.appendChild(subjectsContainer);
+
+        }
+
+        if(refresh) {
+            dialog = document.querySelector('.subject-selection-dialog');
+
+            subjectsContainer = document.getElementById('subjects-container');
+            if (subjectsContainer) {
+                while (subjectsContainer.firstChild) {
+                    subjectsContainer.removeChild(subjectsContainer.firstChild);
+                }
             }
-        });
 
-        const mouseMoveHandler = (e) => {
-            if (isDragging) {
-                e.preventDefault();
-                currentX = e.clientX - initialX;
-                currentY = e.clientY - initialY;
-                xOffset = currentX;
-                yOffset = currentY;
-                dialog.style.transform = `translate(${currentX}px, ${currentY}px)`;
-            }
+            console.log('subjectsContainer is ', subjects);
+        }
+
+        const getTimeText = (unitTime) => {
+            const hours = Math.floor(unitTime / 60);
+            const minutes = unitTime % 60;
+            return hours > 0 ? (minutes > 0 ?
+                `${hours}${t('hours')} ${minutes}${t('minutes')}` : 
+                `${hours}${t('hours')}`) : 
+                `${minutes}${t('minutes')}`;
         };
 
-        const mouseUpHandler = () => {
-            isDragging = false;
-        };
-
-        // Add event listeners for dragging
-        document.addEventListener('mousemove', mouseMoveHandler);
-        document.addEventListener('mouseup', mouseUpHandler);
-
-        // Add subject options that can be dragged
-        // Create container for 2 columns
-        const subjectsContainer = document.createElement('div');
-        subjectsContainer.style.cssText = `
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 1px;
-            width: 100%;
-        `;
-        dialog.appendChild(subjectsContainer);
 
         // Sort subjects by unit_time and map to heights starting from 50px
         const baseHeight = 30;
@@ -398,14 +529,6 @@ function TimeTable() {
         const leftSubjects = Array.from(subjects).slice(0, Math.ceil(subjects.size/2));
         const rightSubjects = Array.from(subjects).slice(Math.ceil(subjects.size/2));
 
-        const getTimeText = (unitTime) => {
-            const hours = Math.floor(unitTime / 60);
-            const minutes = unitTime % 60;
-            return hours > 0 ? (minutes > 0 ?
-                `${hours}${t('hours')} ${minutes}${t('minutes')}` : 
-                `${hours}${t('hours')}`) : 
-                `${minutes}${t('minutes')}`;
-        };
 
         // Create a subject element with given subject and index
         const createSubjectElement = (subject, index, totalLength) => {
@@ -416,7 +539,7 @@ function TimeTable() {
             subjectEl.appendChild(boldText);
             
             // Set unique id and make draggable
-            subjectEl.id = `subject-${subject.id}`;
+            subjectEl.id = `subject-${subject.subject_id}`;
             subjectEl.draggable = true;
             subjectEl.subject_info = subject;
             
@@ -466,6 +589,11 @@ function TimeTable() {
             return subjectEl;
         };
 
+        // Remove all child elements from subjectsContainer
+        while (subjectsContainer.firstChild) {
+            subjectsContainer.removeChild(subjectsContainer.firstChild);
+        }
+
         // Create left column subjects
         leftSubjects.forEach((subject, index) => {
             const subjectEl = createSubjectElement(subject, index, leftSubjects.length);
@@ -478,6 +606,7 @@ function TimeTable() {
             subjectsContainer.appendChild(subjectEl);
         });
         // Cleanup function to remove event listeners and dialog
+
         const cleanup = () => {
             // Remove visibility change event listener
             document.removeEventListener('visibilitychange', () => {});
@@ -498,7 +627,7 @@ function TimeTable() {
         
         // Add close button
         const closeBtn = document.createElement('button');
-        closeBtn.textContent = 'Close';
+        closeBtn.textContent = t('close');
         closeBtn.onclick = () => {
             cleanup();
             dialog.remove();
@@ -514,21 +643,47 @@ function TimeTable() {
         `;
         dialog.appendChild(closeBtn);
 
+        // Add subject button
+        const addSubjectBtn = document.createElement('button');
+        addSubjectBtn.textContent = t('addSubject');
+        addSubjectBtn.onclick = () => {
+            const subjectAdd = new SubjectAdd({
+                t,
+                categories: categories,
+                onSave: (subject_name, category_id, subject_color, subject_unit_time) => {
+                    // Get existing dialog
+                    createSubject(subject_name, category_id, subject_color, subject_unit_time);
+                    //alert('subject_name is ' + subject_name + ' category_id is ' + category_id + ' subject_color is ' + subject_color + ' subject_unit_time is ' + subject_unit_time);
+                }
+            });
+            subjectAdd.show();
+        };
+        addSubjectBtn.style.cssText = `
+            margin: 10px;
+            padding: 5px 10px;
+            background: #282c34;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        `;
+        dialog.appendChild(addSubjectBtn);
+
         document.body.appendChild(dialog);
 
         // Make timetable cells droppable
-        const cells = document.querySelectorAll('.timetable-cell');
-        cells.forEach(cell => {
-            cell.addEventListener('dragover', (e) => {
-                e.preventDefault();
-            });
-            cell.addEventListener('drop', (e) => {
-                e.preventDefault();
-                const subject = e.dataTransfer.getData('text/plain');
-                cell.textContent = subject;
-                cell.style.background = '#e3f2fd';
-            });
-        });
+        // const cells = document.querySelectorAll('.timetable-cell');
+        // cells.forEach(cell => {
+        //     cell.addEventListener('dragover', (e) => {
+        //         e.preventDefault();
+        //     });
+        //     cell.addEventListener('drop', (e) => {
+        //         e.preventDefault();
+        //         const subject = e.dataTransfer.getData('text/plain');
+        //         cell.textContent = subject;
+        //         cell.style.background = '#e3f2fd';
+        //     });
+        // });
     };
 
     const handleStartWithMondayChange = (e) => {
@@ -538,7 +693,7 @@ function TimeTable() {
     };
 
     const updateSchedule = () => {
-        putSchedule();
+        createSchedule();
         setScheduleDirtyFlag(false);
 
         // console.log('updateSchedule is called');
@@ -578,7 +733,8 @@ function TimeTable() {
                 color: subject_info.color,
                 subject_id: subject_info.subject_id,
                 subjectname: subject_info.subjectname
-            }
+            },
+            modified: true
         };
         setMaxScheduleId(maxScheduleId + 1);
         // Add new schedule to existing schedules

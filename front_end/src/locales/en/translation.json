@@ -17,6 +17,13 @@
   "startWithMonday": "Start with Monday",
   "updateSchedule": "Update Schedule",
   "deleteScheduleConfirm": "Delete {{subject}}?",
+  "cancel": "Cancel",
+  "save": "Save",
+  "addSubject": "Add Subject", 
+  "close": "Close",
+  "color": "Color: ",
+  "unitTime": "Unit Time: ",
+  "categories": "Categories: ",
   "nav": {
     "home": "Home",
     "timetable": "Time Table",
@@ -100,5 +107,11 @@
   "menu": {
     "edit": "Edit",
     "delete": "Delete"
+  },
+  "edit": {
+    "title": "Edit",
+    "subject": "Subject",
+    "time": "Time",
+    "invalidTime": "Time must be at least 1 minute."
   }
 }

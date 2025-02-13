@@ -120,7 +120,7 @@ function TimeTable() {
                     top: 0;
                     left: 10%;
                     width: 80%;
-                    height: ${height/30 * 47}px;
+                    height: ${height/30 * 32}px;
                     background-color: ${color};
                     display: flex;
                     align-items: center;

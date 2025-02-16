@@ -99,7 +99,7 @@ async function getCategories(userId) {
     try {
         const categories = await Categories.findAll({ 
             where: { user_id: userId },
-            attributes: ['category_id', 'category_name']
+            attributes: ['category_id', 'category_name', 'color']
         });
         return categories;
     } catch (error) {
@@ -156,7 +156,7 @@ async function getTimeTableByDateRange(userId, startDate, endDate) {
                 },
                 dimmed: 0
             },
-            attributes: ['schedule_id', 'subject_id', 'scheduled_time', 'start_time', 'dimmed'],
+            attributes: ['schedule_id', 'subject_id', 'scheduled_time', 'start_time', 'dimmed', 'special_text'],
             include: [{
                 model: StudySubjects,
                 attributes: ['subject_id', 'subjectname', 'color', 'category_id'],
@@ -187,13 +187,42 @@ async function addTimeTableSchedules(userId, schedules) {
             subject_id: schedule.subjectId,
             scheduled_time: schedule.scheduledTime,
             start_time: schedule.startTime,
-            dimmed: schedule.dimmed
+            dimmed: schedule.dimmed,
+            special_text: schedule.specialText
         }));
 
         // Bulk insert all schedules
         await TimeTable.bulkCreate(scheduleRecords);
     } catch (error) {
         console.error('Error adding schedule to time table:', error);
+        throw error;
+    }
+}
+
+async function updateTimeTableSchedules(userId, schedules) {
+    try {
+        console.log(userId);
+        console.log(schedules);
+
+        await Promise.all(schedules.map(schedule => 
+            TimeTable.update(
+                {
+                    subject_id: schedule.subjectId,
+                    scheduled_time: schedule.scheduledTime, 
+                    start_time: schedule.startTime,
+                    dimmed: schedule.dimmed,
+                    special_text: schedule.specialText
+                },
+                {
+                    where: {
+                        schedule_id: schedule.scheduleId,
+                        user_id: userId
+                    }
+                }
+            )
+        ));
+    } catch (error) {
+        console.error('Error updating schedule in time table:', error);
         throw error;
     }
 }
@@ -243,6 +272,6 @@ async function testConn() {
 
 module.exports = {
     saveUserTokens, getUserSalt, getUserPasswordHash, getUserGroups, getGroupMembers, getGroups, getUsers, getUser, getSubjects, getCategories,
-    getTimeTableByDateRange, addTimeTableSchedules, deleteTimeTableSchedules, createSubject, getLastSubjectId,
+    getTimeTableByDateRange, addTimeTableSchedules, deleteTimeTableSchedules, createSubject, getLastSubjectId, updateTimeTableSchedules,
     testConn
 };

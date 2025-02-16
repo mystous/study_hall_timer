@@ -42,32 +42,7 @@ export default class SubjectAdd {
         checkboxContainer.style.marginTop = '10px';
         checkboxContainer.style.marginBottom = '15px';
 
-        // Create radio buttons for categories
-        this.categories.forEach(category => {
-            const wrapper = document.createElement('div');
-            wrapper.style.display = 'flex';
-            wrapper.style.alignItems = 'center';
-
-            const radio = document.createElement('input');
-            radio.type = 'radio';
-            radio.name = 'category';
-            radio.value = category.category_id;
-            radio.id = `category-${category.category_id}`;
-            radio.addEventListener('change', () => {
-                if (radio.checked) {
-                    this.category_id = radio.value;
-                }
-            });
-            
-            const label = document.createElement('label');
-            label.htmlFor = `category-${category.category_id}`;
-            label.textContent = category.category_name;
-            label.style.marginLeft = '4px';
-
-            wrapper.appendChild(radio);
-            wrapper.appendChild(label);
-            checkboxContainer.appendChild(wrapper);
-        });
+       
 
         categoriesContainer.appendChild(checkboxContainer);
         categoriesContainer.style.display = 'flex';
@@ -118,6 +93,7 @@ export default class SubjectAdd {
         colorInput.type = 'color';
         colorInput.value = '#' + Math.floor(Math.random()*16777215).toString(16);
         colorInput.classList.add('subject-add-input');
+        colorInput.id = 'subject_color_picker';
 
         const colorLabel = document.createElement('label');
         colorLabel.textContent = this.t('color');
@@ -129,6 +105,35 @@ export default class SubjectAdd {
         // Combine sections
         container.appendChild(unitTimeContainer);
         container.appendChild(colorContainer);
+
+        // Create radio buttons for categories
+        this.categories.forEach(category => {
+            const wrapper = document.createElement('div');
+            wrapper.style.display = 'flex';
+            wrapper.style.alignItems = 'center';
+
+            const radio = document.createElement('input');
+            radio.type = 'radio';
+            radio.name = 'category';
+            radio.value = category.category_id;
+            radio.id = `category-${category.category_id}`;
+            radio.addEventListener('change', () => {
+                if (radio.checked) {
+                    this.category_id = radio.value;
+                    colorInput.value = category.color;
+                }
+            }
+            );
+            
+            const label = document.createElement('label');
+            label.htmlFor = `category-${category.category_id}`;
+            label.textContent = category.category_name;
+            label.style.marginLeft = '4px';
+
+            wrapper.appendChild(radio);
+            wrapper.appendChild(label);
+            checkboxContainer.appendChild(wrapper);
+        });
 
         // Create subject input
         const subjectInput = document.createElement('input');

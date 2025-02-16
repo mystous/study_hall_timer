@@ -110,6 +110,8 @@
         "title": "编辑",
         "subject": "科目",
         "time": "时间",
-        "invalidTime": "时间必须至少为1分钟。"
+        "invalidTime": "时间必须至少为1分钟。",
+        "start_time": "开始时间",
+        "subject_name": "科目名称"
     }
 }

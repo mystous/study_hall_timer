@@ -26,6 +26,7 @@ function AppContent() {
   const { user, isAuthenticated } = useAuth();
   const [lastPath, setLastPath] = useState('');
   const { initializeData, finalizeData } = useTimeTable();
+  const [isMenuVisible, setIsMenuVisible] = useState(true);
 
   const changeLanguage = (lng) => {
     i18n.changeLanguage(lng);
@@ -45,8 +46,32 @@ function AppContent() {
 
   return (
     <div className="app-container">
+      <div className="menu-toggle-container" style={{
+        position: 'absolute',
+        top: '10px',
+        left: '10px',
+        zIndex: 1000
+      }}>
+        <button
+          className="menu-toggle"
+          style={{
+            background: 'transparent',
+            border: 'none',
+            cursor: 'pointer',
+            fontSize: '16px'
+          }}
+          onClick={() => {
+            setIsMenuVisible(!isMenuVisible);
+            document.querySelector('.nav-menu').style.display = isMenuVisible ? 'none' : 'block';
+          }}
+        >
+          {isMenuVisible ? <span style={{color: 'white'}}>◀</span> : <span style={{color: 'black'}}>▶</span>}
+        </button>
+      </div>
       {/* 왼쪽 네비게이션 메뉴 */}
       <nav className="nav-menu">
+     
+        <div className="menu-content">
         <ul>
           <li onClick={() => navigate('/')}>{t('nav.home')}</li>
           <li onClick={() => navigate('/about')}>{t('nav.about')}</li>
@@ -67,7 +92,12 @@ function AppContent() {
           {isAuthenticated && (
               <li onClick={() => navigate('/logout')}>{t('nav.logout')}</li>
           )}  
-          <li className="language-selector">
+          <li className="language-selector" style={{
+            position: 'fixed',
+            bottom: '20px',
+            left: '10px',
+            paddingBottom: '20px'
+          }}>
             <span 
               onClick={() => changeLanguage('ko')} 
               className={i18n.language === 'ko' ? 'active' : ''}
@@ -97,6 +127,7 @@ function AppContent() {
             </span>
           </li>
         </ul>
+        </div>
       </nav>
 
       {/* 오른쪽 컨텐츠 영역 */}

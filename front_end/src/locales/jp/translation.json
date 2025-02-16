@@ -112,6 +112,8 @@
     "title": "編集",
     "subject": "科目",
     "time": "時間",
-    "invalidTime": "時間は1分以上でなければなりません。"
+    "invalidTime": "時間は1分以上でなければなりません。",
+    "start_time": "開始時間",
+    "subject_name": "科目名"
   }
 }

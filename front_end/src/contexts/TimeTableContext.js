@@ -160,8 +160,13 @@ export const TimeTableProvider = ({ children }) => {
         subjectId: schedule.subject_id,
         scheduledTime: schedule.scheduled_time,
         startTime: schedule.start_time,
-        dimmed: false
+        dimmed: false,
+        specialText: schedule.special_text
       }));
+
+      if(newSchedules.length === 0) {
+        return;
+      }
 
       console.log(newSchedules);
       const response = await fetch(`${process.env.REACT_APP_BACKEND_URL}/api/v1/time_table`, {
@@ -177,6 +182,61 @@ export const TimeTableProvider = ({ children }) => {
       });
     } catch (error) {
       console.error('Error adding time table schedule:', error);
+    }
+  }
+
+  const updateSchedule = async () => {
+    const modifiedSchedules = schedules.filter(schedule => schedule.modified===true && schedule.schedule_id !== -1).map(schedule => ({
+      scheduleId: schedule.schedule_id,
+      subjectId: schedule.subject_id,
+      scheduledTime: schedule.scheduled_time,
+      startTime: schedule.start_time,
+      dimmed: schedule.dimmed,  
+      specialText: schedule.special_text
+    }));
+
+    if(modifiedSchedules.length === 0) {
+      return;
+    }
+
+    console.log('modifiedSchedules is ', modifiedSchedules);
+    try {
+      const response = await fetch(`${process.env.REACT_APP_BACKEND_URL}/api/v1/time_table`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('accessToken')}`
+        },
+        body: JSON.stringify({
+          username: user.username,
+          schedules: modifiedSchedules
+        })
+      });
+    } catch (error) {
+      console.error('Error updating time table schedule:', error);
+    }
+  }
+
+  const deleteSchedule = async () => {
+
+    const scheduleIds = removedSchedules.map(schedule => schedule.schedule_id);
+    if(scheduleIds.length === 0) {
+      return;
+    }
+
+    try {
+      const response = await fetch(`${process.env.REACT_APP_BACKEND_URL}/api/v1/time_table`, {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('accessToken')}`
+        },
+        body: JSON.stringify({
+          username: user.username, schedules: scheduleIds
+        })
+      });
+    } catch (error) {
+      console.error('Error deleting time table schedule:', error);
     }
   }
 
@@ -199,26 +259,6 @@ export const TimeTableProvider = ({ children }) => {
     
     } catch (error) {
       console.error('Error creating subject:', error);
-    }
-  }
-
-  const deleteSchedule = async () => {
-
-    const scheduleIds = removedSchedules.map(schedule => schedule.schedule_id);
-
-    try {
-      const response = await fetch(`${process.env.REACT_APP_BACKEND_URL}/api/v1/time_table`, {
-        method: 'DELETE',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('accessToken')}`
-        },
-        body: JSON.stringify({
-          username: user.username, schedules: scheduleIds
-        })
-      });
-    } catch (error) {
-      console.error('Error deleting time table schedule:', error);
     }
   }
 
@@ -278,7 +318,8 @@ export const TimeTableProvider = ({ children }) => {
     fetchCategories, 
     fetchSubjects,
     createSubject,
-    setSubjects
+    setSubjects,
+    updateSchedule
   }
 
   return (

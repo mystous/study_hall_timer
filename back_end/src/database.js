@@ -201,6 +201,10 @@ const TimeTable = sequelize.define('time_table', {
     dimmed: {
         type: Sequelize.BOOLEAN,
         defaultValue: false
+    },
+    special_text: {
+        type: Sequelize.STRING(255),
+        allowNull: true
     }
 }, {
     tableName: 'time_table',
@@ -223,6 +227,10 @@ const Categories = sequelize.define('categories', {
     }, 
     user_id: {
         type: Sequelize.INTEGER,
+        allowNull: false
+    },
+    color: {
+        type: Sequelize.CHAR(7),
         allowNull: false
     }
 }, {

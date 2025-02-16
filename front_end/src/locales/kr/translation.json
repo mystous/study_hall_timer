@@ -114,6 +114,8 @@
     "title": "수정",
     "subject": "과목",
     "time": "시간",
-    "invalidTime": "시간은 1분 이상이어야 합니다."
+    "invalidTime": "시간은 1분 이상이어야 합니다.",
+    "start_time": "시작 시간",
+    "subject_name": "과목 이름"
   }
 }

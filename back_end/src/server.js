@@ -424,6 +424,32 @@ app.delete('/api/v1/time_table', async (req, res) => {
   }
 });
 
+app.put('/api/v1/time_table', async (req, res) => {
+  try {
+    if (!validateAuthHeader(req, res)) {
+      return res;
+    } 
+
+    const username = req.body.username;
+    const user = await db.getUser(username);
+    const userId = user.user_id;
+    const schedules = req.body.schedules;
+    addRequestLog(req, res, 'update_time_table_schedule', username, true);
+    console.log(schedules);
+    await db.updateTimeTableSchedules(userId, schedules);
+    res.json({
+      success: true,
+      message: 'Time table schedule updated successfully'
+    });
+  } catch (error) {
+    addRequestLog(req, res, 'update_time_table_schedule', req.body.username, false, 'Error updating time table schedule:' + error.message);
+    console.error('Error updating time table schedule:', error);
+    res.status(500).json({
+      success: false, message: 'Server error occurred.' });
+  }
+});
+
+
 app.get('/api/v1/categories', async (req, res) => {
   try {
     if (!validateAuthHeader(req, res)) {

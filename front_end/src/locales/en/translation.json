@@ -112,6 +112,8 @@
     "title": "Edit",
     "subject": "Subject",
     "time": "Time",
-    "invalidTime": "Time must be at least 1 minute."
+    "invalidTime": "Time must be at least 1 minute.",
+    "start_time": "Start Time",
+    "subject_name": "Subject Name"
   }
 }

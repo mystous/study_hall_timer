@@ -16,6 +16,7 @@
   "thisWeek": "This Week",
   "startWithMonday": "Start with Monday",
   "updateSchedule": "Update Schedule",
+  "copyLastWeek": "Copy Last Week",
   "deleteScheduleConfirm": "Delete {{subject}}?",
   "cancel": "Cancel",
   "save": "Save",

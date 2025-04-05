@@ -43,7 +43,10 @@ function TimeTable() {
         fetchSubjects,
         createSubject,
         setSubjects,
-        updateSchedule
+        updateSchedule,
+        lastWeekSchedules,
+        setLastWeekSchedules,
+        fetchLastWeekSchedules
     } = useTimeTable();
 
 
@@ -216,7 +219,7 @@ function TimeTable() {
                                                 id="start_time_input"
                                                 type="text" 
                                                 value="${schedule.start_time}"
-                                                style="width: 60px; margin-left: 10px"
+                                                style="width: 200px; margin-left: 10px"
                                             />
                                         </div>
                                         <div>
@@ -225,7 +228,7 @@ function TimeTable() {
                                                 id="subject_name_input"
                                                 type="text"
                                                 value="${schedule.special_text || schedule.study_subject.subjectname}"
-                                                style="width: 60px; margin-left: 10px"
+                                                style="width: 180px; margin-left: 10px"
                                             />
                                         </div>
                                     </div>
@@ -384,7 +387,7 @@ function TimeTable() {
             };
 
             const { rowIndex, dayIndex, adjust } = getScheduleIndices(schedule.start_time);
-            // console.log('rowIndex is ', rowIndex, 'dayIndex is ', dayIndex, 'adjust is ', adjust);
+            //console.log('rowIndex is ', rowIndex, 'dayIndex is ', dayIndex, 'adjust is ', adjust);
             if (adjust + schedule.scheduled_time > 0) {
                 createScheduleBar(rowIndex, dayIndex, schedule.scheduled_time + adjust, schedule.study_subject.color, 
                     schedule.special_text || schedule.study_subject.subjectname, schedule.schedule_id, schedule.imageinary_schedule_id);
@@ -399,8 +402,13 @@ function TimeTable() {
                     return { rowIndex: -1, dayIndex: -1, adjust: 0 };
                 }
 
-                const startDayNum = currentStartDay.getDate();
-                const scheduleDayNum = new Date(scheduleTime).getDate();
+                // Calculate days since Jan 1, 1900 to handle month boundaries correctly
+                const getDayNum = (date) => {
+                    return Math.floor((date.getTime() - new Date(1900, 0, 1).getTime()) / (24 * 60 * 60 * 1000));
+                };
+                const startDayNum = getDayNum(currentStartDay);
+                const scheduleDate = new Date(scheduleTime);
+                const scheduleDayNum = getDayNum(scheduleDate);
                 const dayIndex = scheduleDayNum - startDayNum - 1;
 
                 const scheduleTimeInMinutes = (scheduleHour + 24) * 60 + scheduleMinute;
@@ -415,12 +423,13 @@ function TimeTable() {
                     rowIndex = 0;
                 }
                 return { rowIndex, dayIndex, adjust };
-            };
+            };  
             const nightIndices = getNightScheduleIndices(schedule.start_time);
             const rowIndex_night = nightIndices.rowIndex;
             const dayIndex_night = nightIndices.dayIndex;
             const adjust_night = nightIndices.adjust;
             if (rowIndex_night != -1 && dayIndex_night != -1) {
+    
                 createScheduleBar(rowIndex_night, dayIndex_night, schedule.scheduled_time + adjust_night, schedule.study_subject.color, 
                     schedule.special_text || schedule.study_subject.subjectname, schedule.schedule_id, schedule.imageinary_schedule_id);
             }
@@ -757,6 +766,7 @@ function TimeTable() {
     const updateModifiedSchedules = () => {
         createSchedule();
         updateSchedule();
+        setLastWeekSchedules([]);
         setScheduleDirtyFlag(false);
     };
 
@@ -818,6 +828,32 @@ function TimeTable() {
         setScheduleDirtyFlag(true);
         handleUpdateTimes();
     };
+
+    const copyLastWeekSchedules = () => {
+        fetchLastWeekSchedules();
+    }
+
+    useEffect(() => {
+        //console.log('lastWeekSchedules is ', lastWeekSchedules);
+        if (lastWeekSchedules.length > 0) {
+            for (let i = 0; i < lastWeekSchedules.length; i++) {
+                const schedule = lastWeekSchedules[i];
+                if(schedule.dimmed != 1) {
+                    const scheduleDate = new Date(schedule.start_time);
+                    scheduleDate.setDate(scheduleDate.getDate() + 7);
+                    schedule.start_time = scheduleDate.toISOString();
+                    schedule.scheduled_time = schedule.scheduled_time;
+                    schedule.schedule_id = -1;
+                    schedule.imageinary_schedule_id = maxScheduleId;
+                    setMaxScheduleId(maxScheduleId + 1);
+                    setSchedules(prevSchedules => [...prevSchedules, schedule]);
+                    console.log('New schedule is ', schedule);
+                }
+            }
+            setScheduleDirtyFlag(true);
+            handleUpdateTimes();
+        }
+    }, [lastWeekSchedules]);
 
     return (
         <div className="timetable-container">
@@ -885,6 +921,20 @@ function TimeTable() {
                         disabled={!schedule_dirty_flag}
                     >
                         {t('updateSchedule')}
+                    </button>
+                    &nbsp;&nbsp;
+                    <button
+                        style={{
+                            padding: '5px 10px',
+                            backgroundColor: '#2196F3',
+                            color: 'white',
+                            border: 'none',
+                            borderRadius: '4px',
+                            cursor: 'pointer'
+                        }}
+                        onClick={(e)=>{ copyLastWeekSchedules();}}
+                    >
+                        {t('copyLastWeek')}
                     </button>
                 </div>
             </div>
@@ -973,6 +1023,7 @@ function TimeTable() {
                                 <td className={`timetable-cell-${index}-4`} onMouseUp={(e) => handleDragEnd(e, index, 4)}></td>
                                 <td className={`timetable-cell-${index}-5`} onMouseUp={(e) => handleDragEnd(e, index, 5)}></td>
                                 <td className={`timetable-cell-${index}-6`} onMouseUp={(e) => handleDragEnd(e, index, 6)}></td>
+                     
                             </tr>
                         ))}
                     </tbody>

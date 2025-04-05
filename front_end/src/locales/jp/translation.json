@@ -16,6 +16,7 @@
   "thisWeek": "今週",
   "startWithMonday": "月曜日から始める",
   "updateSchedule": "計画更新",
+  "copyLastWeek": "計画コピー",
   "deleteScheduleConfirm": "{{subject}}を削除 しますか？",
   "addSubject": "科目追加",
   "close": "閉じる",

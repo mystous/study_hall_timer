@@ -7,6 +7,7 @@ export const TimeTableProvider = ({ children }) => {
   const [timeTableData, setTimeTableData] = useState(null);
   const [subjects, setSubjects] = useState([]);
   const [schedules, setSchedules] = useState([]);
+  const [lastWeekSchedules, setLastWeekSchedules] = useState([]);
   const [removedSchedules, setRemovedSchedules] = useState([]);
   const [modifiedSchedules, setModifiedSchedules] = useState([]);
   const [categories, setCategories] = useState([]);
@@ -156,6 +157,7 @@ export const TimeTableProvider = ({ children }) => {
     try {
 
       // Filter schedules that don't have schedule_id and create request body
+      console.log('schedules is ', schedules);
       const newSchedules = schedules.filter(schedule => schedule.schedule_id === -1).map(schedule => ({
         subjectId: schedule.subject_id,
         scheduledTime: schedule.scheduled_time,
@@ -165,6 +167,7 @@ export const TimeTableProvider = ({ children }) => {
       }));
 
       if(newSchedules.length === 0) {
+        console.log('newSchedules is empty');
         return;
       }
 
@@ -287,6 +290,38 @@ export const TimeTableProvider = ({ children }) => {
     }
   };
 
+  const fetchLastWeekSchedules = async () => {
+    try {
+      if (!user) {
+        return;
+      }
+      const startDate = new Date(currentStartDay);
+      startDate.setDate(startDate.getDate() - 6);
+      startDate.setHours(6, 0, 0, 0);
+      const endDate = new Date(currentStartDay);
+      endDate.setDate(endDate.getDate());
+      endDate.setHours(23, 59, 59, 999);
+      console.log('startDate is ', startDate);
+      console.log('endDate is ', endDate);
+
+      const response = await fetch(`${process.env.REACT_APP_BACKEND_URL}/api/v1/time_table?startDate=${startDate.toISOString()}&endDate=${endDate.toISOString()}`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('accessToken')}`
+        }
+      });
+
+      const data = await response.json();
+      if (data.success) {
+        const result = data.schedules;
+        setLastWeekSchedules(result);
+      }
+    } catch (error) {
+      console.error('Error fetching schedule:', error);
+    }
+  }
+
   const value = {
     timeTableData,
     setTimeTableData,
@@ -319,7 +354,10 @@ export const TimeTableProvider = ({ children }) => {
     fetchSubjects,
     createSubject,
     setSubjects,
-    updateSchedule
+    updateSchedule,
+    lastWeekSchedules,
+    setLastWeekSchedules,
+    fetchLastWeekSchedules
   }
 
   return (

@@ -14,6 +14,7 @@
   "minutes": "mins",
   "hours": "hrs",
   "thisWeek": "This Week",
+  "today": "Today",
   "startWithMonday": "Start with Monday",
   "updateSchedule": "Update Schedule",
   "copyLastWeek": "Copy Last Week",
@@ -28,6 +29,7 @@
   "nav": {
     "home": "Home",
     "timetable": "Time Table",
+    "daily": "Daily Schedule",
     "statistics": "Study Hall Time Statistics",
     "personalinfo": "Personal Info",
     "about": "About",
@@ -116,5 +118,8 @@
     "invalidTime": "Time must be at least 1 minute.",
     "start_time": "Start Time",
     "subject_name": "Subject Name"
+  },
+  "daily": {
+    "noSchedules": "No study schedules registered."
   }
 }

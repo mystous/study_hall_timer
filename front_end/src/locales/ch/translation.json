@@ -14,6 +14,7 @@
     "updateSchedule": "更新计划",
     "copyLastWeek": "复制上周",
     "thisWeek": "本周",
+    "today": "今天",
     "startWithMonday": "星期一开始",
     "deleteScheduleConfirm": "删除 {{subject}}?",
     "cancel": "取消",
@@ -26,6 +27,7 @@
     "nav": {
         "home": "主页",
         "timetable": "时间表",
+        "daily": "每日计划",
         "statistics": "学习时间统计",
         "personalinfo": "个人资料",
         "about": "关于",
@@ -114,5 +116,8 @@
         "invalidTime": "时间必须至少为1分钟。",
         "start_time": "开始时间",
         "subject_name": "科目名称"
+    },
+    "daily": {
+        "noSchedules": "没有注册的学习计划。"
     }
 }

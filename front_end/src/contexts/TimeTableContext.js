@@ -120,6 +120,39 @@ export const TimeTableProvider = ({ children }) => {
     }
   }
 
+  const fetchOneDaySchedule = async (date) => {
+    try {
+      if (!user) {
+        return;
+      }
+      const startDate = date;
+      //startDate.setDate(startDate.getDate() - 1);
+      const endDate = new Date(date);
+      endDate.setDate(endDate.getDate() + 1);
+
+      const response = await fetch(`${process.env.REACT_APP_BACKEND_URL}/api/v1/time_table?startDate=${startDate.toISOString()}&endDate=${endDate.toISOString()}`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('accessToken')}`
+        }
+      });
+
+      const data = await response.json();
+      if (data.success) {
+        const result = data.schedules;
+        setSchedules(result);
+        // Find max schedule_id and set max_schedule_id
+        const maxId = Math.max(...result.map(schedule => schedule.schedule_id), 0);
+        setMaxScheduleId(maxId * 10 + 1);
+        setImageinaryScheduleIds(maxId * 10 + 1);
+        setRemovedSchedules([]);
+      }
+    } catch (error) {
+      console.error('Error fetching schedule:', error);
+    }
+  };
+
   const fetchScheduleByDate = async (date) => {
     try {
       if (!user) {
@@ -357,7 +390,8 @@ export const TimeTableProvider = ({ children }) => {
     updateSchedule,
     lastWeekSchedules,
     setLastWeekSchedules,
-    fetchLastWeekSchedules
+    fetchLastWeekSchedules,
+    fetchOneDaySchedule
   }
 
   return (

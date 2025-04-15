@@ -17,7 +17,7 @@ import 'react-toastify/dist/ReactToastify.css';
 import { isAdmin } from './common/utils';
 import Admin from './Admin';
 import { TimeTableProvider, useTimeTable } from './contexts/TimeTableContext';
-
+import Daily from './Daily';
 function AppContent() {
   const navigate = useNavigate();
   const location = useLocation();
@@ -31,8 +31,6 @@ function AppContent() {
   const changeLanguage = (lng) => {
     i18n.changeLanguage(lng);
   };
-
-
 
   useEffect(() => {
     if (location.pathname === '/timetable') {
@@ -81,6 +79,7 @@ function AppContent() {
           {isAuthenticated && (
               <>
                   <li onClick={() => navigate('/timetable')}>{t('nav.timetable')}</li>
+                  <li onClick={() => navigate('/daily')}>{t('nav.daily')}</li>
                   <li onClick={() => navigate('/statistics')}>{t('nav.statistics')}</li>
                   <li onClick={() => navigate('/personalinfo')}>{t('nav.personalinfo')}</li>
               </>
@@ -170,6 +169,11 @@ function AppContent() {
           <Route path="/timetable" element={
               <ProtectedRoute>
                   <TimeTable />
+              </ProtectedRoute>
+          } />
+          <Route path="/daily" element={
+              <ProtectedRoute>
+                  <Daily />
               </ProtectedRoute>
           } />
           <Route path="/statistics" element={

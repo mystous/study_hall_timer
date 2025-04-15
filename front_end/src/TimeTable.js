@@ -409,7 +409,7 @@ function TimeTable() {
                 const startDayNum = getDayNum(currentStartDay);
                 const scheduleDate = new Date(scheduleTime);
                 const scheduleDayNum = getDayNum(scheduleDate);
-                const dayIndex = scheduleDayNum - startDayNum - 1;
+                const dayIndex = scheduleDayNum - startDayNum - 2;
 
                 const scheduleTimeInMinutes = (scheduleHour + 24) * 60 + scheduleMinute;
                 const startTimeInMinutes = startTime * 60;

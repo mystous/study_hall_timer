@@ -14,6 +14,7 @@
   "minutes": "分",
   "hours": "時間",
   "thisWeek": "今週",
+  "today": "今日",
   "startWithMonday": "月曜日から始める",
   "updateSchedule": "計画更新",
   "copyLastWeek": "計画コピー",
@@ -28,6 +29,7 @@
   "nav": {
     "home": "ホーム",
     "timetable": "時間割",
+    "daily": "毎日のスケジュール",
     "statistics": "学習時間統計",
     "personalinfo": "個人情報",
     "about": "概要",
@@ -116,5 +118,8 @@
     "invalidTime": "時間は1分以上でなければなりません。",
     "start_time": "開始時間",
     "subject_name": "科目名"
+  },
+  "daily": {
+    "noSchedules": "登録された学習スケジュールがありません。"
   }
 }

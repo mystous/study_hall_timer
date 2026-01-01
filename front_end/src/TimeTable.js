@@ -1,10 +1,15 @@
-import React, { useState, useEffect, useImperativeHandle } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
+import { toast } from 'react-toastify';
 import './css/TimeTable.css';
+import './css/Dialogs.css';
 import { useAuth } from './common/AuthContext';
 import { useTimeTable } from './contexts/TimeTableContext';
-import SubjectAdd from './SubjectAdd';
+import SubjectAddDialog from './SubjectAddDialog';
+import SubjectPalette from './SubjectPalette';
+import TouchDragPreview from './TouchDragPreview';
+import ConfirmationDialog from './ConfirmationDialog';
 
 
 function TimeTable() {
@@ -26,7 +31,6 @@ function TimeTable() {
         getMondayDate,
         getCurrentStartDay,
         startWithMonday,
-        updateTimes,
         setStartWithMonday,
         setCurrentStartDaywithToday,
         setSchedules,
@@ -42,51 +46,207 @@ function TimeTable() {
         categories,
         fetchSubjects,
         createSubject,
-        setSubjects,
         updateSchedule,
         lastWeekSchedules,
         setLastWeekSchedules,
         fetchLastWeekSchedules
     } = useTimeTable();
 
+    // UI States
+    const [isSubjectPaletteOpen, setIsSubjectPaletteOpen] = useState(false);
+    const [isSubjectAddDialogOpen, setIsSubjectAddDialogOpen] = useState(false);
+    const [scheduleDirtyFlag, setScheduleDirtyFlag] = useState(false);
+
+    // Drag and Drop State
+    const [draggedSubjectInfo, setDraggedSubjectInfo] = useState(null);
+    const [dragPosition, setDragPosition] = useState({ x: 0, y: 0 });
+
+    // Context Menu State
+    const [contextMenu, setContextMenu] = useState(null);
+    const [editDialog, setEditDialog] = useState(null);
+    const [deleteDialog, setDeleteDialog] = useState({ isOpen: false, schedule: null });
+
 
     useEffect(() => {
-        handleUpdateTimes();
-    }, [updateTimes]);
+        // Close context menu on global click
+        const handleClick = () => setContextMenu(null);
+        window.addEventListener('click', handleClick);
+        return () => window.removeEventListener('click', handleClick);
+    }, []);
 
-
-    const [subject_info, setSubjectInfo] = useState(null);
-    const [schedule_dirty_flag, setScheduleDirtyFlag] = useState(false);
-
-    const generateTimeSlots = () => {
+    const generateTimeSlots = useCallback(() => {
         const slots = [];
         for (let hour = startTime; hour <= endTime; hour++) {
             const displayHour = hour > 24 ? hour - 24 : hour;
             const nextHour = (hour + 1) > 24 ? hour - 23 : hour + 1;
-            // 시간 형식을 i18n 포맷으로 변경
             const timeLabel = t('timeFormat', {
                 start: String(displayHour).padStart(2, '0'),
                 end: String(nextHour).padStart(2, '0')
             });
-            slots.push({
-                time: timeLabel,
-                isFirstHalf: true
-            });
-            slots.push({
-                time: timeLabel,
-                isFirstHalf: false
-            });
+            slots.push({ time: timeLabel, isFirstHalf: true, hour, minute: 0 });
+            slots.push({ time: timeLabel, isFirstHalf: false, hour, minute: 30 });
         }
         return slots;
+    }, [startTime, endTime, t]);
+
+    const timeSlots = useMemo(() => generateTimeSlots(), [generateTimeSlots]);
+
+    const addScheduleAt = useCallback((rowIndex, dayIndex, subjectInfo) => {
+        if (!subjectInfo) return;
+
+        const slot = timeSlots[rowIndex];
+        const hours = Math.floor(startTime + (rowIndex / 2));
+        const minutes = (rowIndex % 2) * 30;
+
+        const currentDate = new Date(currentStartDay);
+        currentDate.setDate(currentDate.getDate() + dayIndex);
+
+        if (hours >= 24) {
+            currentDate.setDate(currentDate.getDate() + 1);
+        }
+
+        const adjustedHours = hours >= 24 ? hours - 24 : hours;
+
+        const year = currentDate.getFullYear();
+        const month = String(currentDate.getMonth() + 1).padStart(2, '0');
+        const day = String(currentDate.getDate()).padStart(2, '0');
+
+        const timeString = `${String(adjustedHours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:00.000`; // Removed Z to prevent UTC interpretation
+        const formattedDateTime = `${year}-${month}-${day}T${timeString}`;
+
+        const newSchedule = {
+            schedule_id: -1,
+            imageinary_schedule_id: maxScheduleId,
+            start_time: formattedDateTime,
+            scheduled_time: subjectInfo.unit_time,
+            subject_id: subjectInfo.subject_id,
+            study_subject: {
+                ...subjectInfo,
+                category: { category_name: "Unspecified" }
+            },
+            modified: false
+        };
+
+        setMaxScheduleId(maxScheduleId + 1);
+        setSchedules(prev => [...prev, newSchedule]);
+        setScheduleDirtyFlag(true);
+    }, [maxScheduleId, currentStartDay, startTime, timeSlots, setMaxScheduleId, setSchedules, setScheduleDirtyFlag]);
+
+    // Mobile Drop Handler
+    useEffect(() => {
+        const handleGlobalTouchMove = (e) => {
+            if (draggedSubjectInfo) {
+                if (e.cancelable) e.preventDefault(); // Stop scrolling while dragging an item
+                const touch = e.touches[0];
+                setDragPosition({ x: touch.clientX, y: touch.clientY });
+            }
+        };
+
+        const handleGlobalTouchEnd = (e) => {
+            // ... existing logic
+            if (!draggedSubjectInfo) return;
+
+            const touch = e.changedTouches[0];
+            const target = document.elementFromPoint(touch.clientX, touch.clientY);
+
+            let cell = target;
+            while (cell && cell.tagName !== 'TD' && cell.tagName !== 'BODY') {
+                cell = cell.parentElement;
+            }
+
+            if (cell && cell.tagName === 'TD' && cell.classList.contains('timetable-cell')) {
+                const dataKey = cell.getAttribute('data-key');
+                if (dataKey) {
+                    const [dIndex, rIndex] = dataKey.split('-').map(Number);
+                    addScheduleAt(rIndex, dIndex, draggedSubjectInfo);
+                }
+            }
+
+            setDraggedSubjectInfo(null);
+        };
+
+        if (draggedSubjectInfo) {
+            // Need 'passive: false' to allow preventDefault
+            window.addEventListener('touchmove', handleGlobalTouchMove, { passive: false });
+            window.addEventListener('touchend', handleGlobalTouchEnd);
+        }
+
+        return () => {
+            window.removeEventListener('touchmove', handleGlobalTouchMove);
+            window.removeEventListener('touchend', handleGlobalTouchEnd);
+        };
+    }, [draggedSubjectInfo, addScheduleAt]);
+
+    // Helper to clear time components for pure date comparison
+    const clearTime = (date) => {
+        const d = new Date(date);
+        d.setHours(0, 0, 0, 0);
+        return d;
     };
 
-    // 시간 입력 처리 함수
+    // Calculate grid position for schedules
+    const scheduleMap = useMemo(() => {
+        const map = {}; // key: "dayIndex-rowIndex", value: [schedule]
+
+        if (!schedules) return map;
+
+        schedules.forEach(schedule => {
+            // 1. Calculate Day Index using Date objects (Handles Timezone correctly)
+            // schedule.start_time is UTC (e.g., ...T10:00:00.000Z)
+            // new Date() converts to Browser Local Time.
+            // clearTime() sets Local Time to 00:00:00.
+
+            const scheduleDateLocal = new Date(schedule.start_time);
+            const scheduleDateCleared = clearTime(scheduleDateLocal); // Local midnight of schedule day
+            const startDayCleared = clearTime(currentStartDay); // Local midnight of start day
+
+            // Calculate difference in days based on Local Dates
+            const diffTime = scheduleDateCleared.getTime() - startDayCleared.getTime();
+            const dayIndex = Math.round(diffTime / (1000 * 60 * 60 * 24));
+
+            // 2. Calculate Row Index using Local Hours from Date object
+            const scheduleHour = scheduleDateLocal.getHours();
+            const scheduleMinute = scheduleDateLocal.getMinutes();
+
+            const scheduleTimeInMinutes = scheduleHour * 60 + scheduleMinute;
+            const startTimeInMinutes = startTime * 60;
+            const minuteDiff = scheduleTimeInMinutes - startTimeInMinutes;
+
+            let rowIndex = Math.floor(minuteDiff / 30);
+            let adjust = 0;
+
+            if (rowIndex < 0) {
+                adjust = minuteDiff;
+                rowIndex = 0;
+            }
+
+            // Handle Night Schedules (wrapping to next day visually or previous day logic?)
+            // Original logic had `getNightScheduleIndices`...
+            // If scheduleHour < 6 (early morning), it calculated negative index etc.
+            // We will try to rely on simple linear time logic primarily.
+            // If schedule is for "Today 01:00" valid data, but startTime is "06:00", it won't show.
+
+            if (rowIndex >= 0) {
+                const key = `${dayIndex}-${rowIndex}`;
+                if (!map[key]) map[key] = [];
+                map[key].push({ ...schedule, startAdjust: adjust });
+            }
+
+            // Logic for Night Indices (spanning logic?)
+            // Original code checks if scheduleHour >= 6. If so, returns -1.
+            // Only handles early morning hours < 6 AM, treating them likely as "previous day's night" or specialized night view?
+            // Original code: `dayIndex = scheduleDayNum - startDayNum - 2`?? 
+            // That seems to shift it back 2 days? Or maybe just logic for "Night" view after 24:00?
+            // Let's stick to the standard grid mapping for now.
+        });
+        return map;
+    }, [schedules, currentStartDay, startTime]);
+
     const handleStartTimeChange = (e) => {
         const value = parseInt(e.target.value);
         if (value >= 0 && value <= 48) {
             setStartTime(value);
             localStorage.setItem('startTime', value);
-            handleUpdateTimes();
         }
     };
 
@@ -95,941 +255,401 @@ function TimeTable() {
         if (value >= 0 && value <= 48) {
             setEndTime(value);
             localStorage.setItem('endTime', value);
-            handleUpdateTimes();
         }
     };
 
-    let cellId = 0;
+    const handleDragEnd = (e, rowIndex, dayIndex) => {
+        e.preventDefault();
+        if (!draggedSubjectInfo) return;
 
-    const createScheduleBar = (startRowIndex, dayIndex, height, color, text, id, imageinary_schedule_id) => {
-        if (dayIndex < 0) {
-            return;
-        }
+        addScheduleAt(rowIndex, dayIndex, draggedSubjectInfo);
 
-        const rowElement = document.querySelector(`.timetable tbody tr:nth-child(${startRowIndex + 1})`);
-        if (rowElement) {
-            const cell = rowElement.children[(startRowIndex % 2 === 0 ? dayIndex + 1 : dayIndex)]; // +1 because first column is time
-            if (cell) {
-                // Create schedule bar container
-                const scheduleBar = document.createElement('div');
-                scheduleBar.classList.add('schedule-bar');
-                if (id != -1) {
-                    scheduleBar.setAttribute('data-schedule-id', 'schedule-bar-' + id);
-                }
-                else {
-                    scheduleBar.setAttribute('data-schedule-id', 'schedule-bar-' + imageinary_schedule_id);
-                }
-                scheduleBar.style.cssText = `
-                    position: absolute;
-                    top: 0;
-                    left: 10%;
-                    width: 80%;
-                    height: ${height / 30 * 32}px;
-                    background-color: ${color};
-                    display: flex;
-                    align-items: center;
-                    justify-content: center;
-                    font-size: 15px;
-                    padding: 0px;
-                    overflow: auto;
-                    word-wrap: break-word;
-                    white-space: normal;
-                    font-weight: bold;
-                    border: 1px solid #444;
-                `;
-                scheduleBar.textContent = text;
-
-                // Set cell position to relative for absolute positioning of bar
-                cell.style.position = 'relative';
-                cell.appendChild(scheduleBar);
-                // Add double click handler
-                scheduleBar.addEventListener('contextmenu', (e) => {
-                    e.preventDefault();
-
-                    // Remove any existing context menus
-                    const existingMenu = document.querySelector('.context-menu');
-                    if (existingMenu) {
-                        existingMenu.remove();
-                    }
-
-                    // Create context menu
-                    const contextMenu = document.createElement('div');
-                    contextMenu.className = 'context-menu';
-                    contextMenu.style.cssText = `
-                        position: fixed;
-                        z-index: 1000;
-                        background: white;
-                        border: 1px solid #ccc;
-                        border-radius: 4px;
-                        padding: 5px 0;
-                        box-shadow: 2px 2px 5px rgba(0,0,0,0.2);
-                        left: ${e.clientX}px;
-                        top: ${e.clientY}px;
-                    `;
-
-                    // Create menu items
-                    const menuItems = [
-                        {
-                            text: t('menu.edit'),
-                            action: () => {
-                                contextMenu.remove();
-                                // Create edit dialog
-                                const editDialog = document.createElement('div');
-                                editDialog.style.cssText = `
-                                    position: fixed;
-                                    top: 50%;
-                                    left: 50%;
-                                    transform: translate(-50%, -50%);
-                                    background: white;
-                                    padding: 20px;
-                                    border-radius: 8px;
-                                    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-                                    z-index: 1001;
-                                `;
-
-                                const scheduleId = parseInt(scheduleBar.getAttribute('data-schedule-id').split('-')[2]);
-                                let schedule;
-                                if (scheduleId < imageinaryScheduleIds) {
-                                    schedule = schedules.find(s => s.schedule_id === scheduleId);
-                                }
-                                else {
-                                    schedule = schedules.find(s => s.imageinary_schedule_id === scheduleId);
-                                }
-
-                                const subject = schedule.study_subject.subjectname;
-
-                                editDialog.innerHTML = `
-                                    <h3 style="margin-top:0">${t('edit.title')}</h3>
-                                    <p>${t('edit.subject')}: ${subject}</p>
-                                    <div style="margin:10px 0">
-                                        <div>
-                                            <label for="timeInput">${t('edit.time')}:</label>
-                                            <input 
-                                                id="timeInput"
-                                                type="number" 
-                                                value="${schedule.scheduled_time}"
-                                                min="1"
-                                                style="width: 60px; margin-left: 10px"
-                                            />
-                                            <span>${t('minutes')}</span>
-                                        </div>
-                                        <div>
-                                            <label for="start_time_input">${t('edit.start_time')}:</label>
-                                            <input 
-                                                id="start_time_input"
-                                                type="text" 
-                                                value="${schedule.start_time}"
-                                                style="width: 200px; margin-left: 10px"
-                                            />
-                                        </div>
-                                        <div>
-                                            <lable for="subject_name_input">${t('edit.subject_name')}:</lable>
-                                            <input 
-                                                id="subject_name_input"
-                                                type="text"
-                                                value="${schedule.special_text || schedule.study_subject.subjectname}"
-                                                style="width: 180px; margin-left: 10px"
-                                            />
-                                        </div>
-                                    </div>
-                                    <div style="text-align:right;margin-top:20px">
-                                        <button id="cancel-edit" className="edit-button">${t('cancel')}</button>
-                                        <button id="save-edit" className="edit-button" style="margin-left:10px"}>${t('save')}</button>
-                                    </div>
-                                `;
-
-                                document.body.appendChild(editDialog);
-
-                                // Add event listeners
-                                document.getElementById('cancel-edit').onclick = () => {
-                                    editDialog.remove();
-                                };
-
-                                const handleScheduleUpdate = (scheduleId) => {
-                                    const newTime = parseInt(editDialog.querySelector('input').value);
-                                    const newStartTime = editDialog.querySelector('#start_time_input').value;
-                                    const newSpecialText = editDialog.querySelector('#subject_name_input').value;
-
-                                    if (newTime < 1) {
-                                        alert(t('edit.invalidTime'));
-                                        return;
-                                    }
-
-                                    if (scheduleId < imageinaryScheduleIds) {
-                                        setSchedules(prevSchedules =>
-                                            prevSchedules.map(s =>
-                                                (s.schedule_id === scheduleId)
-                                                    ? { ...s, scheduled_time: newTime, start_time: newStartTime, special_text: newSpecialText, modified: true }
-                                                    : s
-                                            )
-                                        );
-                                    } else {
-                                        setSchedules(prevSchedules =>
-                                            prevSchedules.map(s =>
-                                                (s.imageinary_schedule_id === scheduleId)
-                                                    ? { ...s, scheduled_time: newTime, start_time: newStartTime, special_text: newSpecialText }
-                                                    : s
-                                            )
-                                        );
-                                    }
-                                    setScheduleDirtyFlag(true);
-                                    editDialog.remove();
-                                };
-
-                                document.getElementById('save-edit').onclick = () => {
-                                    handleScheduleUpdate(scheduleId);
-                                };
-
-                                editDialog.addEventListener('keypress', (e) => {
-                                    if (e.key === 'Enter') {
-                                        handleScheduleUpdate(scheduleId);
-                                    }
-                                });
-                            }
-                        },
-                        {
-                            text: t('menu.delete'),
-                            action: () => {
-                                const confirmDelete = window.confirm(t('deleteScheduleConfirm', { subject: text }));
-                                if (confirmDelete) {
-                                    const scheduleId = parseInt(scheduleBar.getAttribute('data-schedule-id').split('-')[2]);
-                                    if (scheduleId < imageinaryScheduleIds) {
-                                        setRemovedSchedules(prevRemovedSchedules => [
-                                            ...prevRemovedSchedules,
-                                            schedules.find(s => s.schedule_id === scheduleId)
-                                        ]);
-
-                                        setSchedules(prevSchedules => prevSchedules.filter(s => s.schedule_id !== scheduleId));
-                                    }
-                                    else {
-                                        setSchedules(prevSchedules => prevSchedules.filter(s => s.imageinary_schedule_id !== imageinary_schedule_id));
-                                    }
-
-                                    setScheduleDirtyFlag(true);
-                                }
-                                contextMenu.remove();
-                            }
-                        }
-                    ];
-
-                    menuItems.forEach(item => {
-                        const menuItem = document.createElement('div');
-                        menuItem.textContent = item.text;
-                        menuItem.style.cssText = `
-                            padding: 5px 20px;
-                            cursor: pointer;
-                            &:hover {
-                                background: #f0f0f0;
-                            }
-                        `;
-                        menuItem.addEventListener('click', item.action);
-                        contextMenu.appendChild(menuItem);
-                    });
-
-                    document.body.appendChild(contextMenu);
-
-                    // Close menu when clicking outside
-                    document.addEventListener('click', function closeMenu(e) {
-                        if (!contextMenu.contains(e.target)) {
-                            contextMenu.remove();
-                            document.removeEventListener('click', closeMenu);
-                        }
-                    });
-                });
-                scheduleBar.addEventListener('dblclick', () => {
-                    // Create confirmation dialog
-                    scheduleBar.style.userSelect = 'none';
-
-                });
-            }
-        }
+        setDraggedSubjectInfo(null);
     };
 
-    const handleUpdateTimes = () => {
-        const removeExistingSchedules = () => {
-            document.querySelectorAll('[data-schedule-id]').forEach(element => {
-                element.remove();
-            });
-        };
-        removeExistingSchedules();
-        const cells = document.querySelectorAll('.timetable td:not(:first-child)');
-        cells.forEach(cell => {
-            cell.innerHTML = '';
-            cell.style.background = 'none';
-        });
-
-        schedules.forEach(schedule => {
-            const getScheduleIndices = (scheduleTime) => {
-                // Calculate days since Jan 1, 1900
-                const startDayNum = Math.floor((currentStartDay.getTime() - new Date(1900, 0, 1).getTime()) / (24 * 60 * 60 * 1000));
-                const [year, month, day] = scheduleTime.split('T')[0].split('-');
-                const scheduleDayNum = Math.floor((new Date(year, month - 1, day).getTime() - new Date(1900, 0, 1).getTime()) / (24 * 60 * 60 * 1000));
-
-                const dayIndex = scheduleDayNum - startDayNum;
-                // console.log('startDayNum is ', startDayNum, 'scheduleDayNum is ', scheduleDayNum, 'dayIndex is ', dayIndex);
-
-                const scheduleHour = parseInt(scheduleTime.substring(11, 13));
-                const scheduleMinute = parseInt(scheduleTime.substring(14, 16));
-
-                const scheduleTimeInMinutes = scheduleHour * 60 + scheduleMinute;
-                const startTimeInMinutes = startTime * 60;
-
-                const minuteDiff = scheduleTimeInMinutes - startTimeInMinutes;
-                let rowIndex = Math.floor(minuteDiff / 30);
-
-                let adjust = 0;
-
-                if (rowIndex < 0) {
-                    adjust = minuteDiff;
-                    rowIndex = 0;
-                }
-                return { rowIndex, dayIndex, adjust };
-            };
-
-            const { rowIndex, dayIndex, adjust } = getScheduleIndices(schedule.start_time);
-            //console.log('rowIndex is ', rowIndex, 'dayIndex is ', dayIndex, 'adjust is ', adjust);
-            if (adjust + schedule.scheduled_time > 0) {
-                createScheduleBar(rowIndex, dayIndex, schedule.scheduled_time + adjust, schedule.study_subject.color, 
-                    schedule.special_text || schedule.study_subject.subjectname, schedule.schedule_id, schedule.imageinary_schedule_id);
-            }
-
-            const getNightScheduleIndices = (scheduleTime) => {
-
-                const scheduleHour = parseInt(scheduleTime.substring(11, 13));
-                const scheduleMinute = parseInt(scheduleTime.substring(14, 16));
-
-                if (scheduleHour >= 6) {
-                    return { rowIndex: -1, dayIndex: -1, adjust: 0 };
-                }
-
-                // Calculate days since Jan 1, 1900 to handle month boundaries correctly
-                const getDayNum = (date) => {
-                    return Math.floor((date.getTime() - new Date(1900, 0, 1).getTime()) / (24 * 60 * 60 * 1000));
-                };
-                const startDayNum = getDayNum(currentStartDay);
-                const scheduleDate = new Date(scheduleTime);
-                const scheduleDayNum = getDayNum(scheduleDate);
-                const dayIndex = scheduleDayNum - startDayNum - 2;
-
-                const scheduleTimeInMinutes = (scheduleHour + 24) * 60 + scheduleMinute;
-                const startTimeInMinutes = startTime * 60;
-
-                const minuteDiff = scheduleTimeInMinutes - startTimeInMinutes;
-                let rowIndex = Math.floor(minuteDiff / 30);
-
-                let adjust = 0;
-                if (rowIndex < 0) {
-                    adjust = minuteDiff;
-                    rowIndex = 0;
-                }
-                return { rowIndex, dayIndex, adjust };
-            };  
-            const nightIndices = getNightScheduleIndices(schedule.start_time);
-            const rowIndex_night = nightIndices.rowIndex;
-            const dayIndex_night = nightIndices.dayIndex;
-            const adjust_night = nightIndices.adjust;
-            if (rowIndex_night != -1 && dayIndex_night != -1) {
-    
-                createScheduleBar(rowIndex_night, dayIndex_night, schedule.scheduled_time + adjust_night, schedule.study_subject.color, 
-                    schedule.special_text || schedule.study_subject.subjectname, schedule.schedule_id, schedule.imageinary_schedule_id);
-            }
+    const handleContextMenu = (e, schedule) => {
+        e.preventDefault();
+        e.stopPropagation();
+        setContextMenu({
+            x: e.clientX,
+            y: e.clientY,
+            schedule
         });
     };
 
-    useEffect(() => {
-        handleUpdateTimes();
-    }, [schedules]);
-
-    const handleTimeUpdate = (event, refresh = false) => {
-        // Remove any existing dialogs first
-        const existingDialog = document.querySelector('.subject-selection-dialog');
-        if (existingDialog && refresh !== true) {
-            return;
-        }
-
-        let dialog;
-        let subjectsContainer;
-        let currentPage = 1;
-        const itemsPerPage = 30;
-
-        if (refresh === false) {
-            dialog = document.createElement('div');
-            dialog.className = 'subject-selection-dialog';
-            dialog.style.cssText = `
-                position: absolute;
-                left: ${event.clientX}px;
-                top: ${event.clientY}px;
-                transform: none;
-                background: white;
-                padding: 10px;
-                border-radius: 4px;
-                box-shadow: 0 1px 5px rgba(0,0,0,0.1);
-                z-index: 100;
-                cursor: move;
-                margin: 0;
-                user-select: none;
-                -webkit-user-select: none;
-                -moz-user-select: none;
-                -ms-user-select: none;
-            `;
-
-            // Make dialog draggable
-            let isDragging = false;
-            let currentX, currentY, initialX, initialY;
-            let xOffset = 0, yOffset = 0;
-
-            dialog.addEventListener('mousedown', (e) => {
-                initialX = e.clientX - xOffset;
-                initialY = e.clientY - yOffset;
-                if (e.target === dialog) {
-                    isDragging = true;
-                }
-            });
-
-            const mouseMoveHandler = (e) => {
-                if (isDragging) {
-                    e.preventDefault();
-                    currentX = e.clientX - initialX;
-                    currentY = e.clientY - initialY;
-                    xOffset = currentX;
-                    yOffset = currentY;
-                    dialog.style.transform = `translate(${currentX}px, ${currentY}px)`;
-                }
-            };
-
-            const mouseUpHandler = () => {
-                isDragging = false;
-            };
-
-            // Add event listeners for dragging
-            document.addEventListener('mousemove', mouseMoveHandler);
-            document.addEventListener('mouseup', mouseUpHandler);
-
-            // Add subject options that can be dragged
-            // Create container for 2 columns
-            subjectsContainer = document.createElement('div');
-            subjectsContainer.id = 'subjects-container';
-            subjectsContainer.style.cssText = `
-                display: grid;
-                grid-template-columns: 1fr 1fr;
-                margin-top: 20px;
-                gap: 1px;
-                width: 100%;
-            `;
-            dialog.appendChild(subjectsContainer);
-
-        }
-
-        if (refresh) {
-            dialog = document.querySelector('.subject-selection-dialog');
-
-            subjectsContainer = document.getElementById('subjects-container');
-            if (subjectsContainer) {
-                while (subjectsContainer.firstChild) {
-                    subjectsContainer.removeChild(subjectsContainer.firstChild);
-                }
-            }
-
-            console.log('subjectsContainer is ', subjects);
-        }
-
-        const getTimeText = (unitTime) => {
-            const hours = Math.floor(unitTime / 60);
-            const minutes = unitTime % 60;
-            return hours > 0 ? (minutes > 0 ?
-                `${hours}${t('hours')} ${minutes}${t('minutes')}` :
-                `${hours}${t('hours')}`) :
-                `${minutes}${t('minutes')}`;
-        };
-
-        // Sort subjects by unit_time and map to heights starting from 50px
-        const baseHeight = 30;
-        const heightGap = 20;
-        const sortedUnitTimes = Array.from(new Set(Array.from(subjects).map(s => s.unit_time))).sort((a, b) => a - b);
-        const heightMap = Object.fromEntries(sortedUnitTimes.map((time, i) => [time, baseHeight + (i * heightGap)]));
-
-        const allSubjects = Array.from(subjects);
-        const totalPages = Math.ceil(allSubjects.length / itemsPerPage);
-
-        const renderPage = (page) => {
-            // Clear existing subjects
-            while (subjectsContainer.firstChild) {
-                subjectsContainer.removeChild(subjectsContainer.firstChild);
-            }
-
-            const startIndex = (page - 1) * itemsPerPage;
-            const endIndex = startIndex + itemsPerPage;
-            const pageSubjects = allSubjects.slice(startIndex, endIndex);
-
-            // Split subjects into left and right columns
-            const leftSubjects = pageSubjects.slice(0, Math.ceil(pageSubjects.length / 2));
-            const rightSubjects = pageSubjects.slice(Math.ceil(pageSubjects.length / 2));
-
-            // Create a subject element with given subject and index
-            const createSubjectElement = (subject, index, totalLength) => {
-                const subjectEl = document.createElement('div');
-                const timeText = getTimeText(subject.unit_time);
-                const boldText = document.createElement('strong');
-                boldText.textContent = `${subject.subjectname} - ${timeText}`;
-                subjectEl.appendChild(boldText);
-
-                subjectEl.id = `subject-${subject.subject_id}`;
-                subjectEl.draggable = true;
-                subjectEl.subject_info = subject;
-
-                subjectEl.style.cssText = `
-                    padding: 5px;
-                    margin: 2.5px 2.5px ${index === totalLength - 1 ? '2.5px' : '7.5px'} 2.5px;
-                    height: ${heightMap[subject.unit_time] / 2}px;
-                    background: ${subject.color || '#f0f0f0'};
-                    border-radius: 2px;
-                    cursor: move;
-                    border: 1px solid gray;
-                    display: flex;
-                    align-items: center;
-                `;
-
-                subjectEl.addEventListener('dragend', (e) => {
-                    const element = document.elementFromPoint(e.clientX, e.clientY);
-                    subjectEl.style.opacity = '1';
-
-                    if (element) {
-                        const mouseUpEvent = new MouseEvent('mouseup', {
-                            bubbles: true,
-                            cancelable: true,
-                            view: window,
-                            clientX: e.clientX,
-                            clientY: e.clientY
-                        });
-                        element.dispatchEvent(mouseUpEvent);
-                    }
-
-                    setSubjectInfo(null);
-                });
-
-                subjectEl.addEventListener('dragover', (e) => {
-                    e.preventDefault();
-                    e.dataTransfer.dropEffect = 'move';
-                });
-
-                subjectEl.addEventListener('dragstart', (e) => {
-                    e.dataTransfer.setData('text/plain', subjectEl.id);
-                    e.dataTransfer.effectAllowed = 'move';
-                    subjectEl.style.opacity = '0.5';
-                    setSubjectInfo(subjectEl.subject_info);
-                });
-
-                return subjectEl;
-            };
-
-            // Create left column subjects
-            leftSubjects.forEach((subject, index) => {
-                const subjectEl = createSubjectElement(subject, index, leftSubjects.length);
-                subjectsContainer.appendChild(subjectEl);
-            });
-
-            // Create right column subjects  
-            rightSubjects.forEach((subject, index) => {
-                const subjectEl = createSubjectElement(subject, index, rightSubjects.length);
-                subjectsContainer.appendChild(subjectEl);
-            });
-
-            // Update pagination controls
-            const paginationContainer = document.getElementById('pagination-container') || document.createElement('div');
-            paginationContainer.id = 'pagination-container';
-            paginationContainer.style.cssText = `
-                display: flex;
-                justify-content: center;
-                align-items: center;
-                margin-top: 10px;
-            `;
-            paginationContainer.innerHTML = '';
-
-            if (totalPages > 1) {
-                // Previous button
-                if (page > 1) {
-                    const prevButton = document.createElement('button');
-                    prevButton.textContent = '←';
-                    prevButton.onclick = () => renderPage(page - 1);
-                    prevButton.style.cssText = `
-                        margin: 0 5px;
-                        padding: 5px 10px;
-                        cursor: pointer;
-                    `;
-                    paginationContainer.appendChild(prevButton);
-                }
-
-                // Page numbers
-                for (let i = 1; i <= totalPages; i++) {
-                    const pageButton = document.createElement('button');
-                    pageButton.textContent = i;
-                    pageButton.onclick = () => renderPage(i);
-                    pageButton.style.cssText = `
-                        margin: 0 5px;
-                        padding: 5px 10px;
-                        cursor: pointer;
-                        background: ${i === page ? '#282c34' : 'white'};
-                        color: ${i === page ? 'white' : 'black'};
-                    `;
-                    paginationContainer.appendChild(pageButton);
-                }
-
-                // Next button
-                if (page < totalPages) {
-                    const nextButton = document.createElement('button');
-                    nextButton.textContent = '→';
-                    nextButton.onclick = () => renderPage(page + 1);
-                    nextButton.style.cssText = `
-                        margin: 0 5px;
-                        padding: 5px 10px;
-                        cursor: pointer;
-                    `;
-                    paginationContainer.appendChild(nextButton);
-                }
-
-                if (!document.getElementById('pagination-container')) {
-                    dialog.appendChild(paginationContainer);
-                }
-            }
-        };
-
-        // Initial render of first page
-        renderPage(currentPage);
-
-        // Cleanup function to remove event listeners and dialog
-        const cleanup = () => {
-            document.removeEventListener('visibilitychange', () => { });
-
-            const cells = document.querySelectorAll('.timetable-cell');
-            cells.forEach(cell => {
-                cell.removeEventListener('dragover', () => { });
-                cell.removeEventListener('drop', () => { });
-            });
-
-            const dialog = document.querySelector('subject-selection-dialog');
-            if (dialog) {
-                dialog.remove();
-            }
-        };
-
-        // Add close button
-        const closeBtn = document.createElement('button');
-        closeBtn.textContent = t('close');
-        closeBtn.onclick = () => {
-            cleanup();
-            dialog.remove();
-        };
-        closeBtn.style.cssText = `
-            margin-top: 10px;
-            padding: 5px 10px;
-            background: #282c34;
-            color: white;
-            border: none;
-            border-radius: 4px;
-            cursor: pointer;
-        `;
-        dialog.appendChild(closeBtn);
-
-        // Add subject button
-        const addSubjectBtn = document.createElement('button');
-        addSubjectBtn.textContent = t('addSubject');
-        addSubjectBtn.onclick = () => {
-            const subjectAdd = new SubjectAdd({
-                t,
-                categories: categories,
-                onSave: (subject_name, category_id, subject_color, subject_unit_time) => {
-                    createSubject(subject_name, category_id, subject_color, subject_unit_time);
-                }
-            });
-            subjectAdd.show();
-        };
-        addSubjectBtn.style.cssText = `
-            margin: 10px;
-            padding: 5px 10px;
-            background: #282c34;
-            color: white;
-            border: none;
-            border-radius: 4px;
-            cursor: pointer;
-        `;
-        dialog.appendChild(addSubjectBtn);
-
-        document.body.appendChild(dialog);
+    const handleDeleteSchedule = () => {
+        if (!contextMenu) return;
+        const { schedule } = contextMenu;
+        setDeleteDialog({ isOpen: true, schedule });
+        setContextMenu(null);
     };
 
-    const handleStartWithMondayChange = (e) => {
-        setStartWithMonday(e.target.checked);
-        localStorage.setItem('startWithMonday', e.target.checked);
-        fetchScheduleByDate(currentStartDay);
-    };
+    const confirmDeleteSchedule = () => {
+        const { schedule } = deleteDialog;
+        if (!schedule) return;
 
-    const updateModifiedSchedules = () => {
-        createSchedule();
-        updateSchedule();
-        setLastWeekSchedules([]);
-        setScheduleDirtyFlag(false);
-    };
+        const id = schedule.schedule_id !== -1 ? schedule.schedule_id : schedule.imageinary_schedule_id;
+        const isImaginary = schedule.schedule_id === -1;
 
-    const handleDragEnd = (e, index, cellIndex) => {
-        if (!subject_info) return;
-        // Calculate day and time from indices
-        const currentDate = new Date(currentStartDay);
-        currentDate.setDate(currentDate.getDate() + cellIndex);
-
-        // Calculate hours and minutes (30 min intervals)
-        const hours = Math.floor(startTime + (index / 2));
-        const minutes = (index % 2) * 30;
-        const timeString = `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
-
-        const formattedDate = currentDate.toLocaleDateString();
-        const [year, month, day] = formattedDate.split(". ").filter(part => part !== "").map(part => part.replace(".", ""));
-
-        let adjustedYear = year;
-        let adjustedMonth = month;
-        let adjustedDay = day;
-        let adjustedHours = hours;
-
-        if (hours >= 24) {
-            // Adjust date by adding a day
-            const nextDate = new Date(currentDate);
-            nextDate.setDate(nextDate.getDate() + 1);
-            [adjustedYear, adjustedMonth, adjustedDay] = nextDate.toLocaleDateString()
-                .split(". ")
-                .filter(part => part !== "")
-                .map(part => part.replace(".", ""));
-            
-            // Adjust hours to be within 24 hour range
-            adjustedHours = hours - 24;
+        if (isImaginary) {
+            setSchedules(prev => prev.filter(s => s.imageinary_schedule_id !== id));
+        } else {
+            setRemovedSchedules(prev => [...prev, schedule]);
+            setSchedules(prev => prev.filter(s => s.schedule_id !== id));
         }
-
-        const adjustedTimeString = `${adjustedHours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
-        const formattedDateTime = `${adjustedYear}-${adjustedMonth.padStart(2, '0')}-${adjustedDay.padStart(2, '0')}T${adjustedTimeString}:00.000Z`;
-
-        const newSchedule = {
-            schedule_id: -1, // ID for create new schedule
-            imageinary_schedule_id: maxScheduleId,
-            start_time: formattedDateTime,
-            scheduled_time: subject_info.unit_time,
-            subject_id: subject_info.subject_id,
-            study_subject: {
-                category: {
-                    category_name: "자기주도",
-                },
-                category_id: 1,
-                color: subject_info.color,
-                subject_id: subject_info.subject_id,
-                subjectname: subject_info.subjectname
-            },
-            modified: false
-        };
-        setMaxScheduleId(maxScheduleId + 1);
-        // Add new schedule to existing schedules
-        setSchedules(prevSchedules => [...prevSchedules, newSchedule]);
         setScheduleDirtyFlag(true);
-        handleUpdateTimes();
+        setDeleteDialog({ isOpen: false, schedule: null });
     };
 
-    const copyLastWeekSchedules = () => {
-        fetchLastWeekSchedules();
-    }
+    const handleEditSchedule = () => {
+        if (!contextMenu) return;
+        const { schedule } = contextMenu;
+        setEditDialog({
+            schedule,
+            time: schedule.scheduled_time,
+            startTimeParams: schedule.start_time, // Simplified string editing
+            specialText: schedule.special_text || schedule.study_subject.subjectname
+        });
+        setContextMenu(null);
+    };
 
+    const saveEdit = () => {
+        if (!editDialog) return;
+        const { schedule, time, startTimeParams, specialText } = editDialog;
+
+        const id = schedule.schedule_id !== -1 ? schedule.schedule_id : schedule.imageinary_schedule_id;
+        const isImaginary = schedule.schedule_id === -1;
+
+        const updateFn = (s) => {
+            if ((isImaginary && s.imageinary_schedule_id === id) || (!isImaginary && s.schedule_id === id)) {
+                return {
+                    ...s,
+                    scheduled_time: parseInt(time),
+                    start_time: startTimeParams, // Should validate format
+                    special_text: specialText,
+                    modified: true
+                };
+            }
+            return s;
+        };
+
+        setSchedules(prev => prev.map(updateFn));
+        setScheduleDirtyFlag(true);
+        setEditDialog(null);
+    };
+
+    const handleCopyLastWeek = () => {
+        // Trigger generic fetch which populates lastWeekSchedules
+        fetchLastWeekSchedules();
+    };
+
+    // Effect for handling last week copy logic (legacy logic replication)
     useEffect(() => {
-        //console.log('lastWeekSchedules is ', lastWeekSchedules);
         if (lastWeekSchedules.length > 0) {
-            for (let i = 0; i < lastWeekSchedules.length; i++) {
-                const schedule = lastWeekSchedules[i];
-                if(schedule.dimmed != 1) {
+            const newSchedules = [];
+            let currentMaxId = maxScheduleId;
+
+            lastWeekSchedules.forEach(schedule => {
+                if (schedule.dimmed !== 1) {
                     const scheduleDate = new Date(schedule.start_time);
                     scheduleDate.setDate(scheduleDate.getDate() + 7);
-                    schedule.start_time = scheduleDate.toISOString();
-                    schedule.scheduled_time = schedule.scheduled_time;
-                    schedule.schedule_id = -1;
-                    schedule.imageinary_schedule_id = maxScheduleId;
-                    setMaxScheduleId(maxScheduleId + 1);
-                    setSchedules(prevSchedules => [...prevSchedules, schedule]);
-                    console.log('New schedule is ', schedule);
+
+                    newSchedules.push({
+                        ...schedule,
+                        start_time: scheduleDate.toISOString(),
+                        schedule_id: -1,
+                        imageinary_schedule_id: currentMaxId++,
+                        modified: true // Mark as modified so it can be saved?
+                    });
                 }
+            });
+
+            if (newSchedules.length > 0) {
+                setMaxScheduleId(currentMaxId);
+                setSchedules(prev => [...prev, ...newSchedules]);
+                setScheduleDirtyFlag(true);
+                setLastWeekSchedules([]); // Clear so it doesn't run again
             }
-            setScheduleDirtyFlag(true);
-            handleUpdateTimes();
         }
     }, [lastWeekSchedules]);
 
+
+    // Render Helpers
+    const renderHeaders = () => {
+        const headers = [<th key="time">{t('time')}</th>];
+        const days = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
+
+        let dayOffsets = [0, 1, 2, 3, 4, 5, 6];
+        if (startWithMonday) {
+            dayOffsets = [1, 2, 3, 4, 5, 6, 7]; // Mon to Sun (next week logic needs care)
+            // Original logic used 0..6 logic but shifted labels.
+            // Let's verify original logic:
+            // If startWithMonday: Mon, Tue ... Sat(Blue), Sun(Red)
+            // It actually starts rendering from currentStartDay.
+            // currentStartDay is supposedly Monday if startWithMonday is true.
+        }
+
+        // Logic adjusted to standard 0-6 iteration based on currentStartDay
+        for (let i = 0; i < 7; i++) {
+            const date = new Date(currentStartDay);
+            date.setDate(date.getDate() + i);
+            const dayName = t(days[date.getDay()]); // date.getDay() returns 0 for Sun
+
+            let color = 'black';
+            if (date.getDay() === 0) color = 'red';
+            if (date.getDay() === 6) color = 'blue';
+
+            headers.push(
+                <th key={i} style={{ color }}>
+                    {date.getMonth() + 1}/{date.getDate()}<br />{dayName}
+                </th>
+            );
+        }
+        return headers;
+    };
+
     return (
         <div className="timetable-container">
-            {/* 시간 설정 UI */}
+            {/* Control Panel */}
             <div className="time-settings">
-                <div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
                     <label>{t('startTime')}: </label>
-                    <input
-                        type="number"
-                        min="0"
-                        max="23"
-                        value={startTime}
-                        onChange={handleStartTimeChange}
-                    />
-                    &nbsp;
+                    <input type="number" min="0" max="23" value={startTime} onChange={handleStartTimeChange} />
+
                     <label>{t('endTime')}: </label>
-                    <input
-                        type="number"
-                        min="0"
-                        max="28"
-                        value={endTime}
-                        onChange={handleEndTimeChange}
-                    />
-                    &nbsp;&nbsp;
+                    <input type="number" min="0" max="28" value={endTime} onChange={handleEndTimeChange} />
+
                     <label>{t('startWithMonday')}: </label>
-                    <input
-                        type="checkbox"
-                        checked={startWithMonday}
-                        onChange={(e) => {
-                            handleStartWithMondayChange(e);
-                        }}
-                    />
-                    &nbsp;&nbsp;
-                    <button
-                        style={{
-                            padding: '5px 10px',
-                            backgroundColor: '#282c34',
-                            color: 'white',
-                            border: 'none',
-                            borderRadius: '4px',
-                            cursor: 'pointer'
-                        }}
-                        onClick={(e) => handleTimeUpdate(e)}
-                    >
-                        {t('update')}
+                    <input type="checkbox" checked={startWithMonday} onChange={(e) => {
+                        setStartWithMonday(e.target.checked);
+                        localStorage.setItem('startWithMonday', e.target.checked);
+                        fetchScheduleByDate(currentStartDay);
+                    }} />
+
+                    <button onClick={() => setIsSubjectPaletteOpen(!isSubjectPaletteOpen)} className="edit-button">
+                        {t('update')} {/* This button label is ambiguous in original code, it opened the palette */}
                     </button>
-                    &nbsp;&nbsp;
+
                     <button
-                        style={{
-                            padding: '5px 10px',
-                            backgroundColor: schedule_dirty_flag ? '#ff4444' : '#ffcccc',
-                            color: 'white',
-                            border: 'none',
-                            borderRadius: '4px',
-                            cursor: schedule_dirty_flag ? 'pointer' : 'not-allowed',
-                            opacity: schedule_dirty_flag ? 1 : 0.6
-                        }}
-                        onClick={(e) => {
-                            if (schedule_dirty_flag) {
-                                updateModifiedSchedules();
-                                deleteSchedule();
-                                fetchScheduleByDate(currentStartDay);
+                        onClick={async () => {
+                            if (scheduleDirtyFlag) {
+                                try {
+                                    // Actually saves the schedules
+                                    await Promise.all([
+                                        createSchedule(),
+                                        updateSchedule(),
+                                        deleteSchedule()
+                                    ]);
+
+                                    // Clean refresh?
+                                    setScheduleDirtyFlag(false);
+                                    toast.success(t('saved') || 'Saved!');
+                                } catch (error) {
+                                    console.error("Save failed:", error);
+                                    toast.error(t('error.save') || 'Failed to save schedules.');
+                                }
                             }
                         }}
-                        disabled={!schedule_dirty_flag}
+                        disabled={!scheduleDirtyFlag}
+                        className="edit-button"
+                        style={{ backgroundColor: scheduleDirtyFlag ? '#ff4444' : '#ffcccc' }}
                     >
                         {t('updateSchedule')}
                     </button>
-                    &nbsp;&nbsp;
-                    <button
-                        style={{
-                            padding: '5px 10px',
-                            backgroundColor: '#2196F3',
-                            color: 'white',
-                            border: 'none',
-                            borderRadius: '4px',
-                            cursor: 'pointer'
-                        }}
-                        onClick={(e)=>{ copyLastWeekSchedules();}}
-                    >
+
+                    <button onClick={handleCopyLastWeek} className="edit-button" style={{ backgroundColor: '#2196F3' }}>
                         {t('copyLastWeek')}
                     </button>
                 </div>
             </div>
-            <div style={{ textAlign: 'center', marginBottom: '10px', marginTop: '20px', fontSize: '25px', fontWeight: 'bold', color: 'gray' }}>
-                <span>
-                    {currentStartDay.getFullYear()} W{String(Math.ceil((currentStartDay.getTime() - new Date(currentStartDay.getFullYear(), 0, 1).getTime()) / (7 * 86400000))).padStart(2, '0')}
-                    <button
-                        onClick={() => {
-                            setCurrentStartDaywithToday();
-                            fetchScheduleByDate(currentStartDay);
-                        }}
-                        style={{
-                            marginLeft: '15px',
-                            padding: '3px 8px',
-                            backgroundColor: '#EEEEEE',
-                            color: 'black',
-                            border: 'none',
-                            borderRadius: '4px',
-                            cursor: 'pointer',
-                            fontSize: '14px'
-                        }}
-                    >
-                        {t('thisWeek')}
-                    </button>
-                </span>
-            </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '5px', marginBottom: '20px', justifyContent: 'center' }}>
-                <button
-                    onClick={() => {
-                        const newDate = new Date(currentStartDay.getTime() - 7 * 86400000);
-                        // console.log('newDate is ', newDate);
+
+            {/* Date Navigation */}
+            <div style={{ textAlign: 'center', margin: '20px 0', fontSize: '25px', color: 'gray' }}>
+                <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '15px' }}>
+                    <button onClick={() => {
+                        const newDate = new Date(currentStartDay);
+                        newDate.setDate(newDate.getDate() - 7);
                         setCurrentStartDay(newDate);
                         fetchScheduleByDate(newDate);
-                    }}
-                    style={{ border: 'none', background: 'none', cursor: 'pointer', fontSize: '20px' }}
-                >
-                    ◀
-                </button>
-                <h1>{t('timetable')}</h1>
+                    }} style={{ border: 'none', background: 'none', cursor: 'pointer', fontSize: '20px' }}>◀</button>
+
+                    <span>
+                        {currentStartDay.getFullYear()} W{String(Math.ceil((currentStartDay.getTime() - new Date(currentStartDay.getFullYear(), 0, 1).getTime()) / (7 * 86400000))).padStart(2, '0')}
+                    </span>
+
+                    <button onClick={() => {
+                        const newDate = new Date(currentStartDay);
+                        newDate.setDate(newDate.getDate() + 7);
+                        setCurrentStartDay(newDate);
+                        fetchScheduleByDate(newDate);
+                    }} style={{ border: 'none', background: 'none', cursor: 'pointer', fontSize: '20px' }}>▶</button>
+                </div>
                 <button
-                    onClick={() => {
-                        setCurrentStartDay(new Date(currentStartDay.getTime() + 7 * 86400000));
-                        fetchScheduleByDate(new Date(currentStartDay.getTime() + 7 * 86400000));
-                    }}
-                    style={{ border: 'none', background: 'none', cursor: 'pointer', fontSize: '20px' }}
+                    onClick={() => { setCurrentStartDaywithToday(); fetchScheduleByDate(currentStartDay); }}
+                    style={{ fontSize: '14px', padding: '3px 8px', borderRadius: '4px', border: 'none', marginTop: '5px' }}
                 >
-                    ▶
+                    {t('thisWeek')}
                 </button>
             </div>
+
+            {/* The Table */}
             <div className="timetable">
                 <table>
                     <thead>
-                        <tr>
-                            <th>{t('time')}</th>
-                            {startWithMonday ? (
-                                <>
-                                    <th>{currentStartDay.getMonth() + 1}/{currentStartDay.getDate()}<br />{t('monday')} </th>
-                                    <th>{new Date(currentStartDay.getTime() + 86400000).getMonth() + 1}/{new Date(currentStartDay.getTime() + 86400000).getDate()}<br />{t('tuesday')} </th>
-                                    <th>{new Date(currentStartDay.getTime() + 86400000 * 2).getMonth() + 1}/{new Date(currentStartDay.getTime() + 86400000 * 2).getDate()}<br />{t('wednesday')} </th>
-                                    <th>{new Date(currentStartDay.getTime() + 86400000 * 3).getMonth() + 1}/{new Date(currentStartDay.getTime() + 86400000 * 3).getDate()}<br />{t('thursday')} </th>
-                                    <th>{new Date(currentStartDay.getTime() + 86400000 * 4).getMonth() + 1}/{new Date(currentStartDay.getTime() + 86400000 * 4).getDate()}<br />{t('friday')} </th>
-                                    <th style={{ color: 'blue' }}>{new Date(currentStartDay.getTime() + 86400000 * 5).getMonth() + 1}/{new Date(currentStartDay.getTime() + 86400000 * 5).getDate()}<br />{t('saturday')} </th>
-                                    <th style={{ color: 'red' }}>{new Date(currentStartDay.getTime() + 86400000 * 6).getMonth() + 1}/{new Date(currentStartDay.getTime() + 86400000 * 6).getDate()}<br />{t('sunday')} </th>
-                                </>
-                            ) : (
-                                <>
-                                    <th style={{ color: 'red' }}>{currentStartDay.getMonth() + 1}/{currentStartDay.getDate()}<br />{t('sunday')} </th>
-                                    <th>{new Date(currentStartDay.getTime() + 86400000).getMonth() + 1}/{new Date(currentStartDay.getTime() + 86400000).getDate()}<br />{t('monday')} </th>
-                                    <th>{new Date(currentStartDay.getTime() + 86400000 * 2).getMonth() + 1}/{new Date(currentStartDay.getTime() + 86400000 * 2).getDate()}<br />{t('tuesday')} </th>
-                                    <th>{new Date(currentStartDay.getTime() + 86400000 * 3).getMonth() + 1}/{new Date(currentStartDay.getTime() + 86400000 * 3).getDate()}<br />{t('wednesday')} </th>
-                                    <th>{new Date(currentStartDay.getTime() + 86400000 * 4).getMonth() + 1}/{new Date(currentStartDay.getTime() + 86400000 * 4).getDate()}<br />{t('thursday')} </th>
-                                    <th>{new Date(currentStartDay.getTime() + 86400000 * 5).getMonth() + 1}/{new Date(currentStartDay.getTime() + 86400000 * 5).getDate()}<br />{t('friday')} </th>
-                                    <th style={{ color: 'blue' }}>{new Date(currentStartDay.getTime() + 86400000 * 6).getMonth() + 1}/{new Date(currentStartDay.getTime() + 86400000 * 6).getDate()}<br />{t('saturday')} </th>
-                                </>
-                            )}
-                        </tr>
+                        <tr>{renderHeaders()}</tr>
                     </thead>
                     <tbody>
-                        {generateTimeSlots().map((slot, index) => (
-                            <tr key={index}>
+                        {timeSlots.map((slot, rowIndex) => (
+                            <tr key={rowIndex}>
                                 {slot.isFirstHalf && <td rowSpan="2">{slot.time}</td>}
-                                <td className={`timetable-cell-${index}-0`} onMouseUp={(e) => handleDragEnd(e, index, 0)}></td>
-                                <td className={`timetable-cell-${index}-1`} onMouseUp={(e) => handleDragEnd(e, index, 1)}></td>
-                                <td className={`timetable-cell-${index}-2`} onMouseUp={(e) => handleDragEnd(e, index, 2)}></td>
-                                <td className={`timetable-cell-${index}-3`} onMouseUp={(e) => handleDragEnd(e, index, 3)}></td>
-                                <td className={`timetable-cell-${index}-4`} onMouseUp={(e) => handleDragEnd(e, index, 4)}></td>
-                                <td className={`timetable-cell-${index}-5`} onMouseUp={(e) => handleDragEnd(e, index, 5)}></td>
-                                <td className={`timetable-cell-${index}-6`} onMouseUp={(e) => handleDragEnd(e, index, 6)}></td>
-                     
+                                {Array.from({ length: 7 }).map((_, dayIndex) => {
+                                    const cellKey = `${dayIndex}-${rowIndex}`;
+                                    const cellSchedules = scheduleMap[cellKey] || [];
+
+                                    return (
+                                        <td
+                                            key={dayIndex}
+                                            className={`timetable-cell`}
+                                            data-key={`${dayIndex}-${rowIndex}`} // Added for mobile touch identification
+                                            style={{ position: 'relative', height: '15px', padding: 0 }} // Override padding for cleaner absolute positioning
+                                            onDragOver={(e) => e.preventDefault()}
+                                            useDrop="true"
+                                            onDrop={(e) => handleDragEnd(e, rowIndex, dayIndex)}
+                                        >
+                                            {cellSchedules.map((schedule, idx) => {
+                                                const heightPixels = (schedule.scheduled_time / 30) * 32; // Approx 32px per 30 mins
+                                                return (
+                                                    <div
+                                                        key={schedule.schedule_id === -1 ? `img-${schedule.imageinary_schedule_id}` : schedule.schedule_id}
+                                                        className="schedule-bar"
+                                                        style={{
+                                                            position: 'absolute',
+                                                            top: 0,
+                                                            left: '10%',
+                                                            width: '80%',
+                                                            height: `${heightPixels}px`,
+                                                            backgroundColor: schedule.study_subject.color,
+                                                            fontSize: '12px',
+                                                            overflow: 'hidden',
+                                                            borderRadius: '4px',
+                                                            border: '1px solid #444',
+                                                            display: 'flex',
+                                                            justifyContent: 'center',
+                                                            alignItems: 'center',
+                                                            zIndex: 10,
+                                                            cursor: 'pointer',
+                                                            touchAction: 'manipulation' // Improves double-tap response
+                                                        }}
+                                                        onDoubleClick={(e) => handleContextMenu(e, schedule)}
+                                                        title={`${schedule.study_subject.subjectname} (${schedule.scheduled_time} min)`}
+                                                    >
+                                                        {schedule.special_text || schedule.study_subject.subjectname}
+                                                    </div>
+                                                );
+                                            })}
+                                        </td>
+                                    );
+                                })}
                             </tr>
                         ))}
                     </tbody>
                 </table>
             </div>
+
             <Link to="/" className="back-button">{t('backToHome')}</Link>
+
+            {/* Dialogs */}
+            <SubjectPalette
+                isOpen={isSubjectPaletteOpen}
+                subjects={subjects}
+                onClose={() => setIsSubjectPaletteOpen(false)}
+                onAddSubject={() => setIsSubjectAddDialogOpen(true)}
+                setSubjectInfo={setDraggedSubjectInfo}
+            />
+
+            <SubjectAddDialog
+                isOpen={isSubjectAddDialogOpen}
+                onClose={() => setIsSubjectAddDialogOpen(false)}
+                onSave={(subject_name, category_id, subject_color, subject_unit_time) => {
+                    createSubject(subject_name, category_id, subject_color, subject_unit_time);
+                }}
+                categories={categories}
+            />
+
+            {/* Context Menu */}
+            {contextMenu && (
+                <div
+                    className="context-menu"
+                    style={{ position: 'fixed', top: contextMenu.y, left: contextMenu.x }}
+                    onClick={(e) => e.stopPropagation()}
+                >
+                    <div className="context-menu-item" onClick={handleEditSchedule}>
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ marginRight: '8px' }}>
+                            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                            <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+                        </svg>
+                        {t('menu.edit')}
+                    </div>
+                    <div className="context-menu-item danger" onClick={handleDeleteSchedule}>
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ marginRight: '8px' }}>
+                            <polyline points="3 6 5 6 21 6"></polyline>
+                            <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                            <line x1="10" y1="11" x2="10" y2="17"></line>
+                            <line x1="14" y1="11" x2="14" y2="17"></line>
+                        </svg>
+                        {t('menu.delete')}
+                    </div>
+                </div>
+            )}
+
+            <ConfirmationDialog
+                isOpen={deleteDialog.isOpen}
+                onClose={() => setDeleteDialog({ isOpen: false, schedule: null })}
+                title={t('menu.delete')}
+                message={deleteDialog.schedule ? t('deleteScheduleConfirm', { subject: deleteDialog.schedule.study_subject.subjectname }) : ''}
+                onConfirm={confirmDeleteSchedule}
+                onCancel={() => setDeleteDialog({ isOpen: false, schedule: null })}
+                isDanger={true}
+                confirmLabel={t('menu.delete')}
+            />
+
+            {/* Edit Dialog */}
+            {editDialog && (
+                <div className="dialog-overlay">
+                    <div className="dialog-box">
+                        <h3 className="dialog-title">{t('edit.title')}</h3>
+
+                        <div>
+                            <label className="dialog-label">{t('edit.time')} (min)</label>
+                            <input
+                                type="number"
+                                value={editDialog.time}
+                                onChange={(e) => setEditDialog({ ...editDialog, time: e.target.value })}
+                                className="dialog-input"
+                            />
+                        </div>
+
+                        <div>
+                            <label className="dialog-label">{t('edit.subject_name')}</label>
+                            <input
+                                type="text"
+                                value={editDialog.specialText}
+                                onChange={(e) => setEditDialog({ ...editDialog, specialText: e.target.value })}
+                                className="dialog-input"
+                                onKeyDown={(e) => e.key === 'Enter' && saveEdit()}
+                            />
+                        </div>
+
+                        <div className="dialog-actions">
+                            <button className="btn-secondary" onClick={() => setEditDialog(null)}>{t('cancel')}</button>
+                            <button className="btn-primary" onClick={saveEdit}>{t('save')}</button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Touch Drag Preview */}
+            <TouchDragPreview subject={draggedSubjectInfo} position={dragPosition} />
         </div>
     );
 }

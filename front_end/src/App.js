@@ -18,116 +18,31 @@ import { isAdmin } from './common/utils';
 import Admin from './Admin';
 import { TimeTableProvider, useTimeTable } from './contexts/TimeTableContext';
 import Daily from './Daily';
+import Sidebar from './common/Sidebar';
+
 function AppContent() {
   const navigate = useNavigate();
   const location = useLocation();
-  const { t, i18n } = useTranslation();
+  const { t } = useTranslation();
   const [apiResponse, setApiResponse] = React.useState('');
   const { user, isAuthenticated } = useAuth();
   const [lastPath, setLastPath] = useState('');
   const { initializeData, finalizeData } = useTimeTable();
   const [isMenuVisible, setIsMenuVisible] = useState(true);
 
-  const changeLanguage = (lng) => {
-    i18n.changeLanguage(lng);
-  };
-
   useEffect(() => {
-    if (location.pathname === '/timetable') {
+    if (location.pathname === '/timetable' && user) {
       initializeData();
     }
     else if (lastPath === '/timetable') {
       finalizeData();
     }
     setLastPath(location.pathname);
-  }, [location]);
+  }, [location, user]);
 
   return (
     <div className="app-container">
-      <div className="menu-toggle-container" style={{
-        position: 'absolute',
-        top: '10px',
-        left: '10px',
-        zIndex: 1000
-      }}>
-        <button
-          className="menu-toggle"
-          style={{
-            background: 'transparent',
-            border: 'none',
-            cursor: 'pointer',
-            fontSize: '16px'
-          }}
-          onClick={() => {
-            setIsMenuVisible(!isMenuVisible);
-            document.querySelector('.nav-menu').style.display = isMenuVisible ? 'none' : 'block';
-          }}
-        >
-          {isMenuVisible ? <span style={{color: 'white'}}>◀</span> : <span style={{color: 'black'}}>▶</span>}
-        </button>
-      </div>
-      {/* 왼쪽 네비게이션 메뉴 */}
-      <nav className="nav-menu">
-     
-        <div className="menu-content">
-        <ul>
-          <li onClick={() => navigate('/')}>{t('nav.home')}</li>
-          <li onClick={() => navigate('/about')}>{t('nav.about')}</li>
-          {!isAuthenticated && (
-              <li onClick={() => navigate('/login')}>{t('nav.login')}</li>
-          )}
-          {isAuthenticated && (
-              <>
-                  <li onClick={() => navigate('/timetable')}>{t('nav.timetable')}</li>
-                  <li onClick={() => navigate('/daily')}>{t('nav.daily')}</li>
-                  <li onClick={() => navigate('/statistics')}>{t('nav.statistics')}</li>
-                  <li onClick={() => navigate('/personalinfo')}>{t('nav.personalinfo')}</li>
-              </>
-          )}
-          {isAdmin() && (
-              <li onClick={() => navigate('/admin')}>{t('nav.admin')}</li>
-          )}
-
-          {isAuthenticated && (
-              <li onClick={() => navigate('/logout')}>{t('nav.logout')}</li>
-          )}  
-          <li className="language-selector" style={{
-            position: 'fixed',
-            bottom: '20px',
-            left: '10px',
-            paddingBottom: '20px'
-          }}>
-            <span 
-              onClick={() => changeLanguage('ko')} 
-              className={i18n.language === 'ko' ? 'active' : ''}
-            >
-              ko
-            </span>
-            {' | '}
-            <span 
-              onClick={() => changeLanguage('en')} 
-              className={i18n.language === 'en' ? 'active' : ''}
-            >
-              en
-            </span>
-            {' | '}
-            <span 
-              onClick={() => changeLanguage('ch')} 
-              className={i18n.language === 'ch' ? 'active' : ''}
-            >
-              ch
-            </span>
-            {' | '}
-            <span 
-              onClick={() => changeLanguage('jp')} 
-              className={i18n.language === 'jp' ? 'active' : ''}
-            >
-              jp
-            </span>
-          </li>
-        </ul>
-        </div>
-      </nav>
+      <Sidebar isMenuVisible={isMenuVisible} setIsMenuVisible={setIsMenuVisible} />
 
       {/* 오른쪽 컨텐츠 영역 */}
       <main className="App">
@@ -167,34 +82,34 @@ function AppContent() {
             </header>
           } />
           <Route path="/timetable" element={
-              <ProtectedRoute>
-                  <TimeTable />
-              </ProtectedRoute>
+            <ProtectedRoute>
+              <TimeTable />
+            </ProtectedRoute>
           } />
           <Route path="/daily" element={
-              <ProtectedRoute>
-                  <Daily />
-              </ProtectedRoute>
+            <ProtectedRoute>
+              <Daily />
+            </ProtectedRoute>
           } />
           <Route path="/statistics" element={
-              <ProtectedRoute>
-                  <Statistics />
-              </ProtectedRoute>
+            <ProtectedRoute>
+              <Statistics />
+            </ProtectedRoute>
           } />
           <Route path="/personalinfo" element={
-              <ProtectedRoute>
-                  <PersonalInfo />
-              </ProtectedRoute>
+            <ProtectedRoute>
+              <PersonalInfo />
+            </ProtectedRoute>
           } />
           <Route path="/admin" element={
-              <ProtectedRoute>
-                  <Admin />
-              </ProtectedRoute>
+            <ProtectedRoute>
+              <Admin />
+            </ProtectedRoute>
           } />
           <Route path="/logout" element={
-              <ProtectedRoute>
-                  <Logout />
-              </ProtectedRoute>
+            <ProtectedRoute>
+              <Logout />
+            </ProtectedRoute>
           } />
           <Route path="/about" element={<About />} />
           <Route path="/login" element={<Login />} />

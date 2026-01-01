@@ -21,7 +21,8 @@
   "deleteScheduleConfirm": "Delete {{subject}}?",
   "cancel": "Cancel",
   "save": "Save",
-  "addSubject": "Add Subject", 
+  "saved": "Saved!",
+  "addSubject": "Add Subject",
   "close": "Close",
   "color": "Color: ",
   "unitTime": "Unit Time: ",
@@ -47,7 +48,8 @@
     "testApi": "Test API Connection"
   },
   "error": {
-    "pageNotFound": "Page Not Found"
+    "pageNotFound": "Page Not Found",
+    "save": "Failed to save schedules."
   },
   "about": {
     "title": "Study Hall Timer Introduction",
@@ -121,5 +123,10 @@
   },
   "daily": {
     "noSchedules": "No study schedules registered."
-  }
+  },
+  "subjectPalette": {
+    "title": "Subject List"
+  },
+  "fillAllFields": "Please fill in all fields.",
+  "subjectName": "Subject Name"
 }

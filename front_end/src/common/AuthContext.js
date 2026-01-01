@@ -1,4 +1,4 @@
-import React, { createContext, useState, useContext } from 'react';
+import React, { createContext, useState, useContext, useEffect } from 'react';
 import { saveGroups } from './utils';
 
 export const AuthContext = createContext(null);
@@ -10,7 +10,7 @@ export const AuthProvider = ({ children }) => {
 
   const login = async (username, password) => {
     try {
-      
+
 
       // API 호출 예시
       const response = await fetch(`${process.env.REACT_APP_BACKEND_URL}/api/v1/login`, {
@@ -46,7 +46,7 @@ export const AuthProvider = ({ children }) => {
       const groupData = await groupResponse.json();
 
       return groupData;
-      
+
     } catch (error) {
       throw error;
     }
@@ -58,11 +58,33 @@ export const AuthProvider = ({ children }) => {
     setIsAuthenticated(false);
     localStorage.removeItem('accessToken');
     localStorage.removeItem('refreshToken');
-
   };
 
-    // useEffect를 사용하여 `groups` 상태가 변경될 때마다 `localStorage`에 저장
-   
+  useEffect(() => {
+    const token = localStorage.getItem('accessToken');
+    if (token) {
+      try {
+        // Simple JWT decode to get username
+        const base64Url = token.split('.')[1];
+        const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+        const jsonPayload = decodeURIComponent(atob(base64).split('').map(function (c) {
+          return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
+        }).join(''));
+        const payload = JSON.parse(jsonPayload);
+
+        if (payload && payload.username) {
+          setUser({ username: payload.username });
+          setIsAuthenticated(true);
+        }
+      } catch (e) {
+        console.error("Failed to decode token", e);
+        logout();
+      }
+    }
+  }, []);
+
+  // useEffect를 사용하여 `groups` 상태가 변경될 때마다 `localStorage`에 저장
+
 
   const value = {
     user,

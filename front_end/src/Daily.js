@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useTimeTable } from './contexts/TimeTableContext';
 import './css/Daily.css';
@@ -6,25 +6,35 @@ import './css/Daily.css';
 const Daily = () => {
     const { t } = useTranslation();
     const [currentDate, setCurrentDate] = useState(new Date());
-    const {fetchOneDaySchedule } = useTimeTable();
+    const { fetchOneDaySchedule, oneDaySchedules } = useTimeTable();
     const [dailySchedules, setDailySchedules] = useState([]);
+    const hasRun = useRef(false);
 
     useEffect(() => {
-            //const result = fetchOneDaySchedule(currentDate);
-            //setDailySchedules(result || []);
-            //console.log(result);
+        // Initial fetch
+        fetchOneDaySchedule(currentDate);
     }, [currentDate]);
+
+    useEffect(() => {
+        if (!hasRun.current) return;
+        console.log('hasRun', hasRun.current);
+        console.log('schedules', oneDaySchedules);
+    }, [oneDaySchedules]);
+
+    const handleChangeDay = (newDate) => {
+        setCurrentDate(newDate);
+    };
 
     const handlePrevDay = () => {
         const newDate = new Date(currentDate);
         newDate.setDate(currentDate.getDate() - 1);
-        setCurrentDate(newDate);
+        handleChangeDay(newDate);
     };
 
     const handleNextDay = () => {
         const newDate = new Date(currentDate);
         newDate.setDate(currentDate.getDate() + 1);
-        setCurrentDate(newDate);
+        handleChangeDay(newDate);
     };
 
     const formatDate = (date) => {
@@ -39,10 +49,10 @@ const Daily = () => {
     return (
         <div className="daily-container">
             <div style={{ display: 'flex', alignItems: 'center', gap: '5px', marginBottom: '20px', justifyContent: 'center' }}>
-                <input 
+                <input
                     type="date"
                     value={currentDate.toISOString().split('T')[0]}
-                    onChange={(e) => setCurrentDate(new Date(e.target.value))}
+                    onChange={(e) => handleChangeDay(new Date(e.target.value))}
                     style={{
                         padding: '5px',
                         borderRadius: '4px',
@@ -50,7 +60,7 @@ const Daily = () => {
                     }}
                 />
                 <button
-                    onClick={() => setCurrentDate(new Date())}
+                    onClick={() => handleChangeDay(new Date())}
                     style={{
                         marginLeft: '10px',
                         padding: '5px 10px',
@@ -80,20 +90,30 @@ const Daily = () => {
             </div>
 
             <div className="daily-schedule-list">
-                {dailySchedules.length === 0 ? (
+                {oneDaySchedules.length === 0 ? (
                     <p className="no-schedules">{t('daily.noSchedules')}</p>
                 ) : (
-                    dailySchedules.map((schedule) => (
-                        <div key={schedule.id} className="schedule-item">
-                            <div className="schedule-time">
-                                {schedule.start_time} - {schedule.end_time}
+                    oneDaySchedules.map((schedule) => {
+                        const startDate = new Date(schedule.start_time);
+                        const startHour = String(startDate.getHours()).padStart(2, '0');
+                        const startMinute = String(startDate.getMinutes()).padStart(2, '0');
+
+                        const endDate = new Date(startDate.getTime() + schedule.scheduled_time * 60000);
+                        const endHour = String(endDate.getHours()).padStart(2, '0');
+                        const endMinute = String(endDate.getMinutes()).padStart(2, '0');
+
+                        return (
+                            <div key={schedule.schedule_id} className="schedule-item" style={{ borderLeft: `5px solid ${schedule.study_subject.color}` }}>
+                                <div className="schedule-time">
+                                    {startHour}:{startMinute} - {endHour}:{endMinute} ({schedule.scheduled_time} min)
+                                </div>
+                                <div className="schedule-content">
+                                    <h3>{schedule.study_subject.subjectname}</h3>
+                                    <p>{schedule.special_text}</p>
+                                </div>
                             </div>
-                            <div className="schedule-content">
-                                <h3>{schedule.title}</h3>
-                                <p>{schedule.description}</p>
-                            </div>
-                        </div>
-                    ))
+                        );
+                    })
                 )}
             </div>
         </div>

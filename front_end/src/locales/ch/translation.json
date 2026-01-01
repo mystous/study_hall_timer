@@ -19,6 +19,7 @@
     "deleteScheduleConfirm": "删除 {{subject}}?",
     "cancel": "取消",
     "save": "保存",
+    "saved": "已保存。",
     "addSubject": "添加科目",
     "close": "关闭",
     "color": "颜色: ",
@@ -45,7 +46,8 @@
         "testApi": "测试API连接"
     },
     "error": {
-        "pageNotFound": "页面未找到"
+        "pageNotFound": "页面未找到",
+        "save": "保存计划失败。"
     },
     "about": {
         "title": "学习大厅计时器介绍",
@@ -119,5 +121,10 @@
     },
     "daily": {
         "noSchedules": "没有注册的学习计划。"
-    }
+    },
+    "subjectPalette": {
+        "title": "科目列表"
+    },
+    "fillAllFields": "请填写所有字段。",
+    "subjectName": "科目名称"
 }

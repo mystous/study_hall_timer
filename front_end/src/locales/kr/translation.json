@@ -22,6 +22,7 @@
   "deleteScheduleConfirm": "{{subject}}를 삭제 하시겠습니까?",
   "cancel": "취소",
   "save": "저장",
+  "saved": "저장되었습니다.",
   "addSubject": "과목 추가",
   "close": "닫기",
   "color": "색상: ",
@@ -37,7 +38,6 @@
     "login": "로그인",
     "logout": "로그아웃",
     "admin": "관리자용 페이지"
-  
   },
   "logo": {
     "alt": "로고"
@@ -49,7 +49,8 @@
     "testApi": "서버 연결 테스트"
   },
   "error": {
-    "pageNotFound": "페이지를 찾을 수 없습니다"
+    "pageNotFound": "페이지를 찾을 수 없습니다",
+    "save": "일정 저장에 실패했습니다."
   },
   "about": {
     "title": "순공 타이머 소개",
@@ -123,5 +124,10 @@
   },
   "daily": {
     "noSchedules": "등록된 공부 일정이 없습니다."
-  }
+  },
+  "subjectPalette": {
+    "title": "과목 목록"
+  },
+  "fillAllFields": "모든 항목을 입력해주세요.",
+  "subjectName": "과목 이름"
 }

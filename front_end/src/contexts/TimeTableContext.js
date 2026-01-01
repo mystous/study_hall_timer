@@ -1,12 +1,15 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { useAuth } from '../common/AuthContext';
+import { useTranslation } from 'react-i18next';
 
 const TimeTableContext = createContext();
 
 export const TimeTableProvider = ({ children }) => {
+  const { t } = useTranslation();
   const [timeTableData, setTimeTableData] = useState(null);
   const [subjects, setSubjects] = useState([]);
   const [schedules, setSchedules] = useState([]);
+  const [oneDaySchedules, setOneDaySchedules] = useState([]);
   const [lastWeekSchedules, setLastWeekSchedules] = useState([]);
   const [removedSchedules, setRemovedSchedules] = useState([]);
   const [modifiedSchedules, setModifiedSchedules] = useState([]);
@@ -23,7 +26,7 @@ export const TimeTableProvider = ({ children }) => {
   const getMondayDate = (date) => {
     const d = new Date(date);
     const day = d.getDay();
-    
+
     // If already Monday (day === 1), return date directly
     if (day === 1) {
       d.setHours(0, 0, 0, 0);
@@ -39,7 +42,7 @@ export const TimeTableProvider = ({ children }) => {
   const getSundayDate = (date) => {
     const d = new Date(date);
     const day = d.getDay();
-    
+
     // If already Sunday (day === 0), return date directly
     if (day === 0) {
       d.setHours(0, 0, 0, 0);
@@ -91,7 +94,7 @@ export const TimeTableProvider = ({ children }) => {
       });
       const data = await response.json();
       if (data.success) {
-        const result  = data.subjects;
+        const result = data.subjects;
         setSubjects(result);
       }
     } catch (error) {
@@ -141,12 +144,9 @@ export const TimeTableProvider = ({ children }) => {
       const data = await response.json();
       if (data.success) {
         const result = data.schedules;
-        setSchedules(result);
-        // Find max schedule_id and set max_schedule_id
-        const maxId = Math.max(...result.map(schedule => schedule.schedule_id), 0);
-        setMaxScheduleId(maxId * 10 + 1);
-        setImageinaryScheduleIds(maxId * 10 + 1);
-        setRemovedSchedules([]);
+        setOneDaySchedules(result);
+      } else {
+        setOneDaySchedules([]);
       }
     } catch (error) {
       console.error('Error fetching schedule:', error);
@@ -190,21 +190,18 @@ export const TimeTableProvider = ({ children }) => {
     try {
 
       // Filter schedules that don't have schedule_id and create request body
-      console.log('schedules is ', schedules);
       const newSchedules = schedules.filter(schedule => schedule.schedule_id === -1).map(schedule => ({
-        subjectId: schedule.subject_id,
-        scheduledTime: schedule.scheduled_time,
-        startTime: schedule.start_time,
+        subject_id: schedule.subject_id,
+        scheduled_time: schedule.scheduled_time,
+        start_time: schedule.start_time,
         dimmed: false,
-        specialText: schedule.special_text
+        special_text: schedule.special_text
       }));
 
-      if(newSchedules.length === 0) {
-        console.log('newSchedules is empty');
+      if (newSchedules.length === 0) {
         return;
       }
 
-      console.log(newSchedules);
       const response = await fetch(`${process.env.REACT_APP_BACKEND_URL}/api/v1/time_table`, {
         method: 'POST',
         headers: {
@@ -216,26 +213,30 @@ export const TimeTableProvider = ({ children }) => {
           schedules: newSchedules
         })
       });
+
+      if (!response.ok) {
+        throw new Error('Failed to create schedules');
+      }
     } catch (error) {
       console.error('Error adding time table schedule:', error);
+      throw error;
     }
   }
 
   const updateSchedule = async () => {
-    const modifiedSchedules = schedules.filter(schedule => schedule.modified===true && schedule.schedule_id !== -1).map(schedule => ({
-      scheduleId: schedule.schedule_id,
-      subjectId: schedule.subject_id,
-      scheduledTime: schedule.scheduled_time,
-      startTime: schedule.start_time,
-      dimmed: schedule.dimmed,  
-      specialText: schedule.special_text
+    const modifiedSchedules = schedules.filter(schedule => schedule.modified === true && schedule.schedule_id !== -1).map(schedule => ({
+      schedule_id: schedule.schedule_id,
+      subject_id: schedule.subject_id,
+      scheduled_time: schedule.scheduled_time,
+      start_time: schedule.start_time,
+      dimmed: schedule.dimmed,
+      special_text: schedule.special_text
     }));
 
-    if(modifiedSchedules.length === 0) {
+    if (modifiedSchedules.length === 0) {
       return;
     }
 
-    console.log('modifiedSchedules is ', modifiedSchedules);
     try {
       const response = await fetch(`${process.env.REACT_APP_BACKEND_URL}/api/v1/time_table`, {
         method: 'PUT',
@@ -248,15 +249,20 @@ export const TimeTableProvider = ({ children }) => {
           schedules: modifiedSchedules
         })
       });
+
+      if (!response.ok) {
+        throw new Error('Failed to update schedules');
+      }
     } catch (error) {
       console.error('Error updating time table schedule:', error);
+      throw error;
     }
   }
 
   const deleteSchedule = async () => {
 
-    const scheduleIds = removedSchedules.map(schedule => schedule.schedule_id);
-    if(scheduleIds.length === 0) {
+    const schedulesToDelete = removedSchedules.map(schedule => ({ schedule_id: schedule.schedule_id }));
+    if (schedulesToDelete.length === 0) {
       return;
     }
 
@@ -268,11 +274,16 @@ export const TimeTableProvider = ({ children }) => {
           'Authorization': `Bearer ${localStorage.getItem('accessToken')}`
         },
         body: JSON.stringify({
-          username: user.username, schedules: scheduleIds
+          username: user.username, schedules: schedulesToDelete
         })
       });
+
+      if (!response.ok) {
+        throw new Error('Failed to delete schedules');
+      }
     } catch (error) {
       console.error('Error deleting time table schedule:', error);
+      throw error;
     }
   }
 
@@ -291,10 +302,13 @@ export const TimeTableProvider = ({ children }) => {
       const data = await response.json();
       if (data.success) {
         fetchSubjects();
+        alert(t('subjectCreated') || 'Subject created successfully'); // Visual confirmation
+      } else {
+        alert('Failed to create subject: ' + (data.message || 'Unknown error'));
       }
-    
     } catch (error) {
       console.error('Error creating subject:', error);
+      alert('Error creating subject: ' + error.message);
     }
   }
 
@@ -307,11 +321,11 @@ export const TimeTableProvider = ({ children }) => {
   };
 
   const initializeData = async () => {
-        fetchSubjects();
-        fetchSchedule();
-        fetchCategories();
-        setUpdateTimes(updateTimes + 1);
-        // console.log('updateTimes is ', updateTimes);
+    fetchSubjects();
+    fetchSchedule();
+    fetchCategories();
+    setUpdateTimes(updateTimes + 1);
+    // console.log('updateTimes is ', updateTimes);
   };
 
   const finalizeData = async () => {
@@ -383,7 +397,7 @@ export const TimeTableProvider = ({ children }) => {
     modifiedSchedules,
     setModifiedSchedules,
     categories,
-    fetchCategories, 
+    fetchCategories,
     fetchSubjects,
     createSubject,
     setSubjects,
@@ -391,7 +405,9 @@ export const TimeTableProvider = ({ children }) => {
     lastWeekSchedules,
     setLastWeekSchedules,
     fetchLastWeekSchedules,
-    fetchOneDaySchedule
+    fetchOneDaySchedule,
+    oneDaySchedules,
+    setOneDaySchedules
   }
 
   return (

@@ -2,7 +2,7 @@
   "timetable": "時間割",
   "time": "時間",
   "monday": "月曜日",
-  "tuesday": "火曜日", 
+  "tuesday": "火曜日",
   "wednesday": "水曜日",
   "thursday": "木曜日",
   "friday": "金曜日",
@@ -23,6 +23,7 @@
   "close": "閉じる",
   "cancel": "キャンセル",
   "save": "保存",
+  "saved": "保存しました。",
   "color": "色: ",
   "unitTime": "単位時間: ",
   "categories": "カテゴリ: ",
@@ -47,7 +48,8 @@
     "testApi": "API接続テスト"
   },
   "error": {
-    "pageNotFound": "ページが見つかりません"
+    "pageNotFound": "ページが見つかりません",
+    "save": "スケジュールの保存に失敗しました。"
   },
   "about": {
     "title": "学習室タイマーの紹介",
@@ -121,5 +123,10 @@
   },
   "daily": {
     "noSchedules": "登録された学習スケジュールがありません。"
-  }
+  },
+  "subjectPalette": {
+    "title": "科目リスト"
+  },
+  "fillAllFields": "すべての項目を入力してください。",
+  "subjectName": "科目名"
 }

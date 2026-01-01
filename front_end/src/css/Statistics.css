@@ -48,6 +48,22 @@
   margin-top: 30px;
 }
 
+/* Category Breakdown Bar */
+.category-breakdown-bar {
+  display: flex;
+  height: 20px;
+  width: 100%;
+  background-color: #eee;
+  border-radius: 10px;
+  overflow: hidden;
+  margin-top: 15px;
+}
+
+.breakdown-segment {
+  height: 100%;
+  transition: width 0.3s ease;
+}
+
 /* New Category Styles */
 .category-section {
   background: #fff;
@@ -72,9 +88,24 @@
   border-bottom: 1px solid #eee;
 }
 
+.category-title-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.category-color-dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  display: inline-block;
+}
+
 .category-title {
   font-size: 1.2rem;
   font-weight: bold;
+  color: #333;
+  /* Default dark color for readability */
 }
 
 .category-time {

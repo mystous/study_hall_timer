@@ -214,6 +214,26 @@ const Statistics = () => {
         </h2>
         <p className="total-hours">{totalHours}{t('statistics.summary.hours')}</p>
         <p className="period-display">{displayPeriod}</p>
+
+        {/* Category Breakdown Bar */}
+        <div className="category-breakdown-bar">
+          {studyData.map((category, index) => {
+            const width = totalHours > 0 ? (category.totalHours / totalHours) * 100 : 0;
+            if (width === 0) return null;
+            return (
+              <div
+                key={index}
+                className="breakdown-segment"
+                style={{
+                  width: `${width}%`,
+                  backgroundColor: category.color,
+                  border: isLightColor(category.color) ? '1px solid #ddd' : 'none'
+                }}
+                title={`${category.name}: ${category.totalHours}h (${width.toFixed(1)}%)`}
+              />
+            );
+          })}
+        </div>
       </div>
 
       <div className="statistics-detail">
@@ -221,7 +241,16 @@ const Statistics = () => {
         {studyData.map((category, catIndex) => (
           <div key={catIndex} className="category-section" style={{ borderLeft: `5px solid ${category.color}` }}>
             <div className="category-header">
-              <span className="category-title" style={{ color: category.color }}>{category.name}</span>
+              <div className="category-title-wrapper">
+                <span
+                  className="category-color-dot"
+                  style={{
+                    backgroundColor: category.color,
+                    border: isLightColor(category.color) ? '1px solid #ccc' : 'none'
+                  }}
+                ></span>
+                <span className="category-title">{category.name}</span>
+              </div>
               <span className="category-time">{category.totalHours}{t('statistics.summary.hours')}</span>
             </div>
             <div className="category-subjects">

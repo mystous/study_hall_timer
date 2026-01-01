@@ -84,6 +84,7 @@
     },
     "detail": {
       "bySubject": "과목별 학습시간",
+      "byCategory": "카테고리별 학습시간",
       "subjects": {
         "math": "수학",
         "english": "영어",

@@ -83,6 +83,7 @@
     },
     "detail": {
       "bySubject": "Study Time by Subject",
+      "byCategory": "Study Time by Category",
       "subjects": {
         "math": "Math",
         "english": "English",

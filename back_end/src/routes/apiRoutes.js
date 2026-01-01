@@ -26,6 +26,7 @@ router.post('/time_table', validateAuthHeader, timeTableController.addSchedule);
 router.put('/time_table', validateAuthHeader, timeTableController.updateSchedule);
 router.delete('/time_table', validateAuthHeader, timeTableController.deleteSchedule);
 
+
 // Protected Routes - Subjects (Legacy wrappers or need specific controller?)
 // app.get('/api/v1/subjects') -> subjectController.getSubjects
 // app.post('/api/v1/subjects') -> subjectController.createSubject

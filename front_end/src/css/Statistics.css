@@ -1,82 +1,132 @@
 .statistics-container {
-    padding: 20px;
-    max-width: 800px;
-    margin: 0 auto;
-  }
-  
-  .time-range-selector {
-    display: flex;
-    gap: 10px;
-    margin: 20px 0;
-  }
-  
-  .time-range-selector button {
-    padding: 8px 16px;
-    border: 1px solid #ddd;
-    background: white;
-    border-radius: 4px;
-    cursor: pointer;
-  }
-  
-  .time-range-selector button.active {
-    background: #007bff;
-    color: white;
-    border-color: #007bff;
-  }
-  
-  .statistics-summary {
-    background: #f8f9fa;
-    padding: 20px;
-    border-radius: 8px;
-    text-align: center;
-    margin: 20px 0;
-  }
-  
-  .total-hours {
-    font-size: 2em;
-    font-weight: bold;
-    color: #007bff;
-  }
-  
-  .statistics-detail {
-    margin-top: 30px;
-  }
-  
-  .subject-row {
-    display: flex;
-    margin: 15px 0;
-    align-items: center;
-  }
-  
-  .subject-name {
-    width: 100px;
-    font-weight: bold;
-  }
-  
-  .subject-hours {
-    flex: 1;
-    position: relative;
-    height: 30px;
-    background: #f1f1f1;
-    border-radius: 4px;
-    margin-left: 10px;
-  }
-  
-  .hours-bar {
-    position: absolute;
-    left: 0;
-    top: 0;
-    height: 100%;
-    background: #007bff;
-    border-radius: 4px;
-    transition: width 0.3s ease;
-  }
-  
-  .subject-hours span {
-    position: absolute;
-    right: 10px;
-    top: 50%;
-    transform: translateY(-50%);
-    z-index: 1;
-    color: #333;
-  } 
+  padding: 20px;
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+.time-range-selector {
+  display: flex;
+  gap: 10px;
+  margin: 20px 0;
+}
+
+.time-range-selector button {
+  padding: 8px 16px;
+  border: 1px solid #ddd;
+  background: white;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.time-range-selector button.active {
+  background: #007bff;
+  color: white;
+  border-color: #007bff;
+}
+
+.statistics-summary {
+  background: #f8f9fa;
+  padding: 20px;
+  border-radius: 8px;
+  text-align: center;
+  margin: 20px 0;
+}
+
+.total-hours {
+  font-size: 2em;
+  font-weight: bold;
+  color: #007bff;
+}
+
+.period-display {
+  font-size: 1rem;
+  color: #666;
+  margin-top: 5px;
+}
+
+.statistics-detail {
+  margin-top: 30px;
+}
+
+/* New Category Styles */
+.category-section {
+  background: #fff;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  margin-bottom: 25px;
+  padding: 20px;
+  transition: transform 0.2s;
+}
+
+.category-section:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.category-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 15px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid #eee;
+}
+
+.category-title {
+  font-size: 1.2rem;
+  font-weight: bold;
+}
+
+.category-time {
+  font-weight: 600;
+  color: #555;
+}
+
+.subject-row {
+  display: flex;
+  margin: 15px 0;
+  align-items: center;
+}
+
+.subject-name {
+  width: 120px;
+  /* Slight increase for better fit */
+  font-weight: 500;
+  color: #333;
+}
+
+.subject-hours {
+  flex: 1;
+  position: relative;
+  height: 30px;
+  background: #f1f1f1;
+  border-radius: 15px;
+  /* Rounded corners for modern look */
+  margin-left: 10px;
+  overflow: hidden;
+  /* Ensure bar radius respects container */
+}
+
+.hours-bar {
+  position: absolute;
+  left: 0;
+  top: 0;
+  height: 100%;
+  border-radius: 15px;
+  transition: width 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+  /* Smooth animation */
+}
+
+.subject-hours span {
+  position: absolute;
+  right: 15px;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 2;
+  color: #333;
+  /* Default text color */
+  font-size: 0.9rem;
+  font-weight: 600;
+  text-shadow: 0 0 2px rgba(255, 255, 255, 0.7);
+  /* Better readability */
+}

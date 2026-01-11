@@ -2,6 +2,31 @@ const authService = require('../services/authService');
 const { addRequestLog } = require('../utils/utils');
 const { ObserverRelation } = require('../database');
 
+const register = async (req, res) => {
+    const { username, password } = req.body;
+    try {
+        if (!username || !password) {
+            throw new Error('Username and password are required.');
+        }
+
+        await authService.register(username, password);
+
+        addRequestLog(req, res, 'register', username, true);
+
+        res.json({
+            success: true,
+            message: 'Registration successful'
+        });
+    } catch (error) {
+        addRequestLog(req, res, 'register', username, false, 'Register error:' + error.message);
+
+        res.status(400).json({
+            success: false,
+            message: error.message || 'Registration failed'
+        });
+    }
+};
+
 const login = async (req, res) => {
     const { username, password } = req.body;
     try {
@@ -72,5 +97,6 @@ const refresh = async (req, res) => {
 
 module.exports = {
     login,
+    register,
     refresh
 };

@@ -174,5 +174,13 @@
   "subjectCreated": "과목이 생성되었습니다.",
   "serverConnectionFailed": "서버 연결에 실패했습니다.",
   "deleted": "삭제되었습니다.",
-  "delete": "삭제"
+  "delete": "삭제",
+  "passwordsDoNotMatch": "비밀번호가 일치하지 않습니다.",
+  "registrationSuccess": "회원가입이 완료되었습니다.",
+  "registrationFailed": "회원가입에 실패했습니다.",
+  "register": "회원가입",
+  "username": "아이디",
+  "password": "비밀번호",
+  "confirmPassword": "비밀번호 확인",
+  "noAccount": "계정이 없으신가요?"
 }

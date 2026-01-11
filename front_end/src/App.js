@@ -8,6 +8,7 @@ import PersonalInfo from './PersonalInfo';
 import Statistics from './Statistics';
 import { Routes, Route, useNavigate, useLocation } from 'react-router-dom';
 import Login from './common/Login';
+import Register from './common/Register';
 import { AuthProvider } from './common/AuthContext';
 import ProtectedRoute from './common/ProtectedRoute';
 import { useAuth } from './common/AuthContext';
@@ -125,6 +126,7 @@ function AppContent() {
           } />
           <Route path="/about" element={<About />} />
           <Route path="/login" element={<Login />} />
+          <Route path="/register" element={<Register />} />
           <Route path="*" element={<div className="App-header">{t('error.pageNotFound')}</div>} />
         </Routes>
       </main>

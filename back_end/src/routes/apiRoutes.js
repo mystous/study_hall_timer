@@ -13,6 +13,7 @@ const { validateLogin } = require('../middlewares/validationMiddleware');
 // Auth routes
 router.post('/auth/login', authController.login);
 router.post('/auth/refresh', authController.refresh);
+router.post('/auth/register', authController.register);
 
 // Protected Routes - User
 router.get('/user/user_groups', validateAuthHeader, userController.getUserGroups);

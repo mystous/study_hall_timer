@@ -8,6 +8,26 @@ if (process.env.NODE_ENV === 'production' && !process.env.JWT_SECRET) {
     console.error('WARNING: JWT_SECRET is not set in production environment!');
 }
 
+const register = async (username, password) => {
+    const existingUser = await User.findOne({ where: { username } });
+    if (existingUser) {
+        throw new Error('Username already exists.');
+    }
+
+    const { hash, salt } = await passwordManager.createHash(password);
+
+    const newUser = await User.create({
+        username,
+        password_hash: hash,
+        salt
+    });
+
+    return {
+        user_id: newUser.user_id,
+        username: newUser.username
+    };
+};
+
 const login = async (username, password) => {
     const user = await User.findOne({ where: { username } });
     if (!user) {
@@ -79,6 +99,7 @@ const getUser = async (username) => {
 
 module.exports = {
     login,
+    register,
     refreshToken,
     getUser
 };

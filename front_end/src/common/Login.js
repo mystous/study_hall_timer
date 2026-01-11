@@ -47,6 +47,9 @@ function Login() {
           />
         </div>
         <button type="submit">{t('login.login')}</button>
+        <p style={{ marginTop: '10px', textAlign: 'center' }}>
+          {t('noAccount')} <span onClick={() => navigate('/register')} style={{ color: 'blue', cursor: 'pointer', textDecoration: 'underline' }}>{t('register')}</span>
+        </p>
       </form>
     </div>
   );

@@ -12,7 +12,7 @@ import { AuthProvider } from './common/AuthContext';
 import ProtectedRoute from './common/ProtectedRoute';
 import { useAuth } from './common/AuthContext';
 import Logout from './common/Logout';
-import { ToastContainer } from 'react-toastify';
+import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import { isAdmin } from './common/utils';
 import Admin from './Admin';
@@ -20,6 +20,7 @@ import { TimeTableProvider, useTimeTable } from './contexts/TimeTableContext';
 import Daily from './Daily';
 import Sidebar from './common/Sidebar';
 import SubjectManagement from './SubjectManagement';
+import ObserverManagement from './ObserverManagement';
 
 function AppContent() {
   const navigate = useNavigate();
@@ -74,7 +75,7 @@ function AppContent() {
                     setApiResponse(data.timestamp);
                   } catch (error) {
                     console.error('API 호출 에러:', error);
-                    alert('서버 연결에 실패했습니다.');
+                    toast.error(t('serverConnectionFailed') || '서버 연결에 실패했습니다.');
                   }
                 }}>
                   {t('home.testApi')}
@@ -115,6 +116,11 @@ function AppContent() {
           <Route path="/subjects" element={
             <ProtectedRoute>
               <SubjectManagement />
+            </ProtectedRoute>
+          } />
+          <Route path="/observer" element={
+            <ProtectedRoute>
+              <ObserverManagement />
             </ProtectedRoute>
           } />
           <Route path="/about" element={<About />} />

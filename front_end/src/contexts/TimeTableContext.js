@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { useAuth } from '../common/AuthContext';
 import { useTranslation } from 'react-i18next';
+import { toast } from 'react-toastify';
 
 const TimeTableContext = createContext();
 
@@ -80,12 +81,18 @@ export const TimeTableProvider = ({ children }) => {
   const getCurrentStartDay = () => {
     return currentStartDay;
   }
-  const fetchSubjects = async () => {
+  const fetchSubjects = async (targetUserId) => {
     try {
       if (!user) {
-        return;
+        // If no user, but userId param exists, allow fetching for observer mode
+        const userIdParam = targetUserId || new URLSearchParams(window.location.search).get('userId');
+        if (!userIdParam) {
+          return;
+        }
       }
-      const response = await fetch(`${process.env.REACT_APP_BACKEND_URL}/api/v1/subjects`, {
+      const userIdParam = targetUserId || new URLSearchParams(window.location.search).get('userId');
+      const query = userIdParam ? `?userId=${userIdParam}` : '';
+      const response = await fetch(`${process.env.REACT_APP_BACKEND_URL}/api/v1/subjects${query}`, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
@@ -104,9 +111,11 @@ export const TimeTableProvider = ({ children }) => {
     }
   };
 
-  const fetchCategories = async () => {
+  const fetchCategories = async (targetUserId) => {
     try {
-      const response = await fetch(`${process.env.REACT_APP_BACKEND_URL}/api/v1/categories`, {
+      const userIdParam = targetUserId || new URLSearchParams(window.location.search).get('userId');
+      const query = userIdParam ? `?userId=${userIdParam}` : '';
+      const response = await fetch(`${process.env.REACT_APP_BACKEND_URL}/api/v1/categories${query}`, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
@@ -123,7 +132,7 @@ export const TimeTableProvider = ({ children }) => {
     }
   }
 
-  const fetchOneDaySchedule = async (date) => {
+  const fetchOneDaySchedule = async (date, targetUserId) => {
     try {
       if (!user) {
         return;
@@ -133,7 +142,10 @@ export const TimeTableProvider = ({ children }) => {
       const endDate = new Date(date);
       endDate.setDate(endDate.getDate() + 1);
 
-      const response = await fetch(`${process.env.REACT_APP_BACKEND_URL}/api/v1/time_table?startDate=${startDate.toISOString()}&endDate=${endDate.toISOString()}`, {
+      const userIdParam = targetUserId || new URLSearchParams(window.location.search).get('userId');
+      const query = userIdParam ? `&userId=${userIdParam}` : '';
+
+      const response = await fetch(`${process.env.REACT_APP_BACKEND_URL}/api/v1/time_table?startDate=${startDate.toISOString()}&endDate=${endDate.toISOString()}${query}`, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
@@ -153,7 +165,7 @@ export const TimeTableProvider = ({ children }) => {
     }
   };
 
-  const fetchScheduleByDate = async (date) => {
+  const fetchScheduleByDate = async (date, targetUserId) => {
     try {
       if (!user) {
         return;
@@ -163,7 +175,10 @@ export const TimeTableProvider = ({ children }) => {
       const endDate = new Date(date);
       endDate.setDate(endDate.getDate() + 8);
 
-      const response = await fetch(`${process.env.REACT_APP_BACKEND_URL}/api/v1/time_table?startDate=${startDate.toISOString()}&endDate=${endDate.toISOString()}`, {
+      const userIdParam = targetUserId || new URLSearchParams(window.location.search).get('userId');
+      const query = userIdParam ? `&userId=${userIdParam}` : '';
+
+      const response = await fetch(`${process.env.REACT_APP_BACKEND_URL}/api/v1/time_table?startDate=${startDate.toISOString()}&endDate=${endDate.toISOString()}${query}`, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
@@ -172,8 +187,10 @@ export const TimeTableProvider = ({ children }) => {
       });
 
       const data = await response.json();
+      console.log('fetchScheduleByDate response:', data);
       if (data.success) {
         const result = data.schedules;
+        console.log('fetchScheduleByDate schedules:', result);
         setSchedules(result);
         // Find max schedule_id and set max_schedule_id
         const maxId = Math.max(...result.map(schedule => schedule.schedule_id), 0);
@@ -302,13 +319,13 @@ export const TimeTableProvider = ({ children }) => {
       const data = await response.json();
       if (data.success) {
         fetchSubjects();
-        alert(t('subjectCreated') || 'Subject created successfully'); // Visual confirmation
+        toast.success(t('subjectCreated') || 'Subject created successfully'); // Visual confirmation
       } else {
-        alert('Failed to create subject: ' + (data.message || 'Unknown error'));
+        toast.error('Failed to create subject: ' + (data.message || 'Unknown error'));
       }
     } catch (error) {
       console.error('Error creating subject:', error);
-      alert('Error creating subject: ' + error.message);
+      toast.error('Error creating subject: ' + error.message);
     }
   }
 
@@ -337,7 +354,7 @@ export const TimeTableProvider = ({ children }) => {
     }
   };
 
-  const fetchLastWeekSchedules = async () => {
+  const fetchLastWeekSchedules = async (targetUserId) => {
     try {
       if (!user) {
         return;
@@ -351,7 +368,10 @@ export const TimeTableProvider = ({ children }) => {
       console.log('startDate is ', startDate);
       console.log('endDate is ', endDate);
 
-      const response = await fetch(`${process.env.REACT_APP_BACKEND_URL}/api/v1/time_table?startDate=${startDate.toISOString()}&endDate=${endDate.toISOString()}`, {
+      const userIdParam = targetUserId || new URLSearchParams(window.location.search).get('userId');
+      const query = userIdParam ? `&userId=${userIdParam}` : '';
+
+      const response = await fetch(`${process.env.REACT_APP_BACKEND_URL}/api/v1/time_table?startDate=${startDate.toISOString()}&endDate=${endDate.toISOString()}${query}`, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',

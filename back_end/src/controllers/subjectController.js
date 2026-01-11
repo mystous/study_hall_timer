@@ -1,23 +1,41 @@
-const { StudySubjects, User, Categories } = require('../database');
+const { StudySubjects, User, Categories, ObserverRelation } = require('../database');
 const { addRequestLog } = require('../utils/utils');
+const db = require('../db_operation');
 
-exports.getSubjects = async (req, res) => {
+const getSubjects = async (req, res) => {
+    let userId = req.user.user_id;
+    const requestedUserId = req.query.userId;
+
     try {
-        const user = await User.findOne({ where: { username: req.user.username } });
-        if (!user) {
-            return res.status(404).json({ success: false, message: 'User not found' });
+        if (requestedUserId && parseInt(requestedUserId) !== userId) {
+            const isGuardian = await ObserverRelation.findOne({
+                where: {
+                    student_id: requestedUserId,
+                    guardian_id: userId,
+                    status: 'accepted'
+                }
+            });
+            if (!isGuardian) {
+                return res.status(403).json({ success: false, message: 'Permission denied.' });
+            }
+            userId = requestedUserId;
         }
-        const subjects = await StudySubjects.findAll({
-            where: { user_id: user.user_id },
-            include: [Categories]
+
+        const subjects = await db.getSubjects(userId);
+        addRequestLog(req, res, 'subjects', '', true);
+        res.json({
+            success: true,
+            subjects: subjects
         });
-        addRequestLog(req, res, 'get_subjects', req.user.username, true);
-        res.json({ success: true, subjects });
     } catch (error) {
-        addRequestLog(req, res, 'get_subjects', req.user.username, false, error.message);
-        res.status(500).json({ success: false, message: 'Server error' });
+        addRequestLog(req, res, 'subjects', '', false, error.message);
+        res.status(500).json({
+            success: false,
+            message: error.message
+        });
     }
 };
+exports.getSubjects = getSubjects;
 
 exports.createSubject = async (req, res) => {
     try {

@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import './css/Dialogs.css';
+import { toast } from 'react-toastify';
 
 const SubjectAddDialog = ({ isOpen, onClose, onSave, categories }) => {
     const { t } = useTranslation();
@@ -16,7 +17,7 @@ const SubjectAddDialog = ({ isOpen, onClose, onSave, categories }) => {
             onSave(subjectName.trim(), selectedCategoryId, color, unitTime);
             onClose();
         } else {
-            alert(t('fillAllFields'));
+            toast.warn(t('fillAllFields'));
         }
     };
 

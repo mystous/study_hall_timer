@@ -36,7 +36,9 @@
     "about": "概要",
     "login": "ログイン",
     "logout": "ログアウト",
-    "admin": "管理者用ページ"
+    "admin": "管理者用ページ",
+    "subjects": "科目管理",
+    "observer": "観察者管理"
   },
   "logo": {
     "alt": "ロゴ"
@@ -128,5 +130,28 @@
     "title": "科目リスト"
   },
   "fillAllFields": "すべての項目を入力してください。",
-  "subjectName": "科目名"
+  "subjectName": "科目名",
+  "Observer Management": "観察者管理",
+  "My Students (I am Guardian)": "私の生徒 (保護者)",
+  "My Observers (I am Student)": "私の観察者 (生徒)",
+  "Add Student": "生徒追加",
+  "Enter student username": "生徒ID入力",
+  "Send Request": "リクエスト送信",
+  "My Students": "私の生徒たち",
+  "View TimeTable": "時間割を見る",
+  "View Statistics": "統計を見る",
+  "Remove": "削除",
+  "Sent Requests": "送信済みリクエスト",
+  "Cancel": "キャンセル",
+  "Pending Requests": "受信リクエスト (待機中)",
+  "Accept": "承認",
+  "Reject": "拒否",
+  "My Observers": "私の観察者",
+  "No students found.": "生徒がいません。",
+  "No sent requests.": "送信済みリクエストがありません。",
+  "No pending requests.": "待機中のリクエストがありません。",
+  "No observers found.": "観察者がいません。",
+  "Request sent": "リクエストを送信しました。",
+  "Are you sure?": "本当に削除しますか？",
+  "My TimeTable": "私の時間割"
 }

@@ -20,13 +20,13 @@ const login = async (username, password) => {
     }
 
     const accessToken = jwt.sign(
-        { username: username }, // Using username as payload as per original
+        { username: username, user_id: user.user_id },
         JWT_SECRET,
         { expiresIn: '1h' }
     );
 
     const refreshToken = jwt.sign(
-        { username: username },
+        { username: username, user_id: user.user_id },
         JWT_SECRET,
         { expiresIn: '1d' }
     );
@@ -53,8 +53,14 @@ const refreshToken = async (token) => {
             throw new Error('Invalid refresh token.');
         }
 
+        // Fetch user to get user_id
+        const user = await User.findOne({ where: { username } });
+        if (!user) {
+            throw new Error('User not found.');
+        }
+
         const accessToken = jwt.sign(
-            { username: username },
+            { username: username, user_id: user.user_id },
             JWT_SECRET,
             { expiresIn: '1h' }
         );

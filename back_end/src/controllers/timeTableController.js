@@ -1,32 +1,52 @@
 const timeTableService = require('../services/timeTableService');
 const { addRequestLog } = require('../utils/utils');
-const { User } = require('../database');
+const { User, ObserverRelation } = require('../database');
 
 const getTimeTable = async (req, res) => {
     try {
         const { startDate, endDate } = req.query;
         // The middleware authMiddleware attaches user to req.user.
-        // We need userId.
-        // If JWT payload only has username, we might need to fetch userId or store it in token.
-        // Current JWT payload: { username: ... }
-        // Let's fetch User first.
 
         const user = await User.findOne({ where: { username: req.user.username } });
         if (!user) return res.status(404).json({ success: false, message: 'User not found' });
 
-        const schedules = await timeTableService.getTimeTable(user.user_id, startDate, endDate);
+        let userId = user.user_id;
 
-        if (!schedules || schedules.length === 0) {
-            addRequestLog(req, res, 'time_table', req.user.username, false, 'No time table found');
-            return res.status(404).json({ success: false, message: 'No time table found' }); // Or empty list?
+        const requestedUserId = req.query.userId;
+        if (requestedUserId && parseInt(requestedUserId) !== userId) {
+            // Check permission
+            const isGuardian = await ObserverRelation.findOne({
+                where: {
+                    student_id: requestedUserId,
+                    guardian_id: userId,
+                    status: 'accepted'
+                }
+            });
+
+            if (!isGuardian) {
+                return res.status(403).json({ success: false, message: 'Permission denied. Not an observer.' });
+            }
+            userId = requestedUserId;
         }
 
-        addRequestLog(req, res, 'time_table', req.user.username, true);
-        res.json({ success: true, schedules });
+        const schedules = await timeTableService.getTimeTable(userId, startDate, endDate);
 
+        if (!schedules || schedules.length === 0) {
+            // Allow empty schedule return
+        }
+
+        addRequestLog(req, res, 'timetable', '', true);
+
+        res.json({
+            success: true,
+            schedules: schedules
+        });
     } catch (error) {
-        addRequestLog(req, res, 'time_table', req.user.username, false, error.message);
-        res.status(500).json({ success: false, message: 'Server error' });
+        addRequestLog(req, res, 'timetable', '', false, 'Error fetching timetable:' + error.message);
+        res.status(500).json({
+            success: false,
+            message: error.message || 'Server error occurred.'
+        });
     }
 };
 

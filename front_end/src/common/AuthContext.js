@@ -1,5 +1,6 @@
 import React, { createContext, useState, useContext, useEffect } from 'react';
 import { saveGroups } from './utils';
+import { toast } from 'react-toastify';
 
 export const AuthContext = createContext(null);
 
@@ -13,7 +14,7 @@ export const AuthProvider = ({ children }) => {
 
 
       // API 호출 예시
-      const response = await fetch(`${process.env.REACT_APP_BACKEND_URL}/api/v1/login`, {
+      const response = await fetch(`${process.env.REACT_APP_BACKEND_URL}/api/v1/auth/login`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -30,6 +31,28 @@ export const AuthProvider = ({ children }) => {
       setIsAuthenticated(true);
       localStorage.setItem('accessToken', data.token.accessToken);
       localStorage.setItem('refreshToken', data.token.refreshToken);
+
+      if (data.hasPendingObserverRequests) {
+        toast.info("수락하지 않은 관찰자 요청이 있습니다. 관찰자 관리 메뉴를 확인해주세요.", {
+          position: "top-right",
+          autoClose: 5000,
+        });
+      }
+
+      if (data.hasNewAcceptanceNotifications) {
+        toast.success("관찰 요청이 수락되었습니다!", {
+          position: "top-right",
+          autoClose: 5000,
+        });
+        // We might want to call the notification endpoint to clear them or rely on the user checking?
+        // Actually, the requirements said "tell me". If we just tell them, is it cleared?
+        // authController doesn't clear it.
+        // Let's call the notification endpoint silently to clear them after notifying.
+        fetch(`${process.env.REACT_APP_BACKEND_URL}/api/v1/observer/notifications`, {
+          headers: { 'Authorization': `Bearer ${data.token.accessToken}` }
+        });
+      }
+
       // Get user's groups using access token
       const groupResponse = await fetch(`${process.env.REACT_APP_BACKEND_URL}/api/v1/user/user_groups`, {
         method: 'GET',
@@ -152,6 +175,39 @@ export const AuthProvider = ({ children }) => {
 
     return () => clearInterval(intervalId);
   }, []);
+
+  // Polling for notifications
+  useEffect(() => {
+    if (!isAuthenticated) return;
+
+    const checkNotifications = async () => {
+      try {
+        const token = localStorage.getItem('accessToken');
+        if (!token) return;
+
+        const response = await fetch(`${process.env.REACT_APP_BACKEND_URL}/api/v1/observer/notifications`, {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        const data = await response.json();
+        if (data.success && data.notifications.length > 0) {
+          data.notifications.forEach(notif => {
+            toast.success(`${notif.student}님이 관찰 요청을 수락했습니다!`, {
+              position: "top-right",
+              autoClose: 5000
+            });
+          });
+        }
+      } catch (e) {
+        console.error("Failed to check notifications", e);
+      }
+    };
+
+    // Initial check (maybe redundant if login handles it, but good for page refresh)
+    // checkNotifications(); 
+
+    const interval = setInterval(checkNotifications, 30000); // Check every 30 seconds
+    return () => clearInterval(interval);
+  }, [isAuthenticated]);
 
   const value = {
     user,

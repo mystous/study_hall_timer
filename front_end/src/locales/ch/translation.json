@@ -34,7 +34,9 @@
         "about": "关于",
         "login": "登录",
         "logout": "登出",
-        "admin": "管理员页面"
+        "admin": "管理员页面",
+        "subjects": "科目管理",
+        "observer": "观察者管理"
     },
     "logo": {
         "alt": "logo"
@@ -126,5 +128,28 @@
         "title": "科目列表"
     },
     "fillAllFields": "请填写所有字段。",
-    "subjectName": "科目名称"
+    "subjectName": "科目名称",
+    "Observer Management": "观察者管理",
+    "My Students (I am Guardian)": "我的学生 (监护人)",
+    "My Observers (I am Student)": "我的观察者 (学生)",
+    "Add Student": "添加学生",
+    "Enter student username": "输入学生用户名",
+    "Send Request": "发送请求",
+    "My Students": "我的学生",
+    "View TimeTable": "查看时间表",
+    "View Statistics": "查看统计",
+    "Remove": "删除",
+    "Sent Requests": "已发送请求",
+    "Cancel": "取消",
+    "Pending Requests": "待处理请求",
+    "Accept": "接受",
+    "Reject": "拒绝",
+    "My Observers": "我的观察者",
+    "No students found.": "未找到学生。",
+    "No sent requests.": "没有已发送的请求。",
+    "No pending requests.": "没有待处理的请求。",
+    "No observers found.": "未找到观察者。",
+    "Request sent": "请求已发送。",
+    "Are you sure?": "您确定吗？",
+    "My TimeTable": "我的时间表"
 }

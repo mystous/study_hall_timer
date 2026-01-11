@@ -1,10 +1,27 @@
 const authService = require('../services/authService');
 const { addRequestLog } = require('../utils/utils');
+const { ObserverRelation } = require('../database');
 
 const login = async (req, res) => {
     const { username, password } = req.body;
     try {
         const result = await authService.login(username, password);
+
+        const pendingCount = await ObserverRelation.count({
+            where: {
+                student_id: result.user.user_id,
+                status: 'pending'
+            }
+        });
+
+        // Check for new acceptances (where user is GUARDIAN)
+        const acceptanceCount = await ObserverRelation.count({
+            where: {
+                guardian_id: result.user.user_id,
+                status: 'accepted',
+                is_checked: false
+            }
+        });
 
         addRequestLog(req, res, 'login', username, true);
 
@@ -17,7 +34,9 @@ const login = async (req, res) => {
             },
             user: {
                 username: result.user.username
-            }
+            },
+            hasPendingObserverRequests: pendingCount > 0,
+            hasNewAcceptanceNotifications: acceptanceCount > 0
         });
     } catch (error) {
         addRequestLog(req, res, 'login', username, false, 'Login error:' + error.message);

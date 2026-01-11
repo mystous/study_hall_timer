@@ -47,4 +47,21 @@ router.get('/test', (req, res) => {
     res.json({ timestamp: currentTime });
 });
 
+const observerController = require('../controllers/observerController');
+
+// ... (existing imports)
+
+// Auth routes
+// ...
+
+// Observer Routes
+router.post('/observer/request', validateAuthHeader, observerController.requestObservation);
+router.get('/observer/pending', validateAuthHeader, observerController.getPendingRequests);
+router.get('/observer/sent', validateAuthHeader, observerController.getMySentRequests);
+router.get('/observer/notifications', validateAuthHeader, observerController.getNotifications);
+router.post('/observer/respond', validateAuthHeader, observerController.respondObservation);
+router.delete('/observer/remove', validateAuthHeader, observerController.removeObservation);
+router.get('/observer/students', validateAuthHeader, observerController.getObservedStudents);
+router.get('/observer/observers', validateAuthHeader, observerController.getMyObservers);
+
 module.exports = router;

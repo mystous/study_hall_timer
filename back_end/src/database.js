@@ -153,7 +153,7 @@ const StudySubjects = sequelize.define('study_subjects', {
     visibility_level_id: {
         type: Sequelize.INTEGER,
         allowNull: false
-    }, 
+    },
     category_id: {
         type: Sequelize.INTEGER,
         allowNull: false
@@ -224,7 +224,7 @@ const Categories = sequelize.define('categories', {
     category_name: {
         type: Sequelize.STRING(255),
         allowNull: false
-    }, 
+    },
     user_id: {
         type: Sequelize.INTEGER,
         allowNull: false
@@ -235,6 +235,42 @@ const Categories = sequelize.define('categories', {
     }
 }, {
     tableName: 'categories',
+    timestamps: false,
+    charset: 'utf8mb4',
+    engine: 'InnoDB'
+});
+
+// ObserverRelation 모델 정의
+const ObserverRelation = sequelize.define('observer_relation', {
+    relation_id: {
+        type: Sequelize.INTEGER,
+        primaryKey: true,
+        autoIncrement: true
+    },
+    student_id: {
+        type: Sequelize.INTEGER,
+        allowNull: false
+    },
+    guardian_id: {
+        type: Sequelize.INTEGER,
+        allowNull: false
+    },
+    status: {
+        type: Sequelize.ENUM('pending', 'accepted'),
+        defaultValue: 'pending',
+        allowNull: false
+    },
+    is_checked: {
+        type: Sequelize.BOOLEAN,
+        defaultValue: true,
+        allowNull: false
+    },
+    created_at: {
+        type: Sequelize.DATE,
+        defaultValue: Sequelize.literal('CURRENT_TIMESTAMP')
+    }
+}, {
+    tableName: 'observer_relations',
     timestamps: false,
     charset: 'utf8mb4',
     engine: 'InnoDB'
@@ -283,8 +319,13 @@ GroupInfo.belongsToMany(User, {
     foreignKey: 'group_id'
 });
 
+ObserverRelation.belongsTo(User, { as: 'Student', foreignKey: 'student_id' });
+ObserverRelation.belongsTo(User, { as: 'Guardian', foreignKey: 'guardian_id' });
+User.hasMany(ObserverRelation, { as: 'ObserverRelations', foreignKey: 'student_id' });
+User.hasMany(ObserverRelation, { as: 'GuardianRelations', foreignKey: 'guardian_id' });
+
 
 module.exports = {
-   Token, User, GroupInfo, UserGroupInfo, VisibilityLevel, StudySubjects, TimeTable, Categories,
-   testConnection
+    Token, User, GroupInfo, UserGroupInfo, VisibilityLevel, StudySubjects, TimeTable, Categories, ObserverRelation,
+    testConnection
 };

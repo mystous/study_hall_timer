@@ -64,11 +64,14 @@ const Statistics = () => {
       const formatDate = (d) => `${d.getFullYear()}.${String(d.getMonth() + 1).padStart(2, '0')}.${String(d.getDate()).padStart(2, '0')}`;
       setDisplayPeriod(`${formatDate(start)} ~ ${formatDate(end)}`);
 
+      const userId = new URLSearchParams(window.location.search).get('userId');
+
       const response = await axios.get(`${process.env.REACT_APP_BACKEND_URL}/api/v1/time_table`, {
         headers: { Authorization: `Bearer ${token}` },
         params: {
           startDate: start.toISOString(),
-          endDate: end.toISOString()
+          endDate: end.toISOString(),
+          userId: userId
         }
       });
 

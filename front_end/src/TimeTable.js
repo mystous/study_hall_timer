@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { getContrastColor } from './common/utils';
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'react-toastify';
 import './css/TimeTable.css';
@@ -16,6 +16,7 @@ import ConfirmationDialog from './ConfirmationDialog';
 function TimeTable() {
     const { t } = useTranslation();
     const location = useLocation();
+    const navigate = useNavigate();
     const [startTime, setStartTime] = useState(() => {
         const savedStartTime = localStorage.getItem('startTime');
         return savedStartTime ? parseInt(savedStartTime) : 6;
@@ -45,6 +46,7 @@ function TimeTable() {
         setRemovedSchedules,
         deleteSchedule,
         categories,
+        fetchCategories,
         fetchSubjects,
         createSubject,
         updateSchedule,
@@ -52,6 +54,53 @@ function TimeTable() {
         setLastWeekSchedules,
         fetchLastWeekSchedules
     } = useTimeTable();
+
+    const [myStudents, setMyStudents] = useState([]);
+    const [selectedStudentId, setSelectedStudentId] = useState('');
+
+    useEffect(() => {
+        const fetchMyStudents = async () => {
+            if (!user) return;
+            try {
+                const res = await fetch(`${process.env.REACT_APP_BACKEND_URL}/api/v1/observer/students`, {
+                    headers: { 'Authorization': `Bearer ${localStorage.getItem('accessToken')}` }
+                });
+                const data = await res.json();
+                if (data.success) {
+                    setMyStudents(data.students);
+                }
+            } catch (e) {
+                console.error("Failed to fetch students", e);
+            }
+        };
+        fetchMyStudents();
+    }, [user]);
+
+    // Get userId from URL for consistent usage
+    const queryParams = new URLSearchParams(location.search);
+    const targetUserId = queryParams.get('userId');
+    const loggedInUserId = user?.user_id; // Keep strict distinction as requested
+
+    useEffect(() => {
+        // const params = new URLSearchParams(location.search); // Redundant
+        // const userId = params.get('userId'); // Redundant
+        setSelectedStudentId(targetUserId || '');
+
+        // Refetch data when URL changes
+        console.log('TimeTable.js useEffect: Refetching data. targetUserId:', targetUserId);
+        fetchSubjects(targetUserId);
+        fetchCategories(targetUserId);
+        fetchScheduleByDate(currentStartDay, targetUserId);
+    }, [location.search, currentStartDay, user]);
+
+    const handleStudentChange = (e) => {
+        const newUserId = e.target.value;
+        if (newUserId) {
+            navigate(`/timetable?userId=${newUserId}`);
+        } else {
+            navigate(`/timetable`);
+        }
+    };
 
     // UI States
     const [isSubjectPaletteOpen, setIsSubjectPaletteOpen] = useState(false);
@@ -341,7 +390,7 @@ function TimeTable() {
 
     const handleCopyLastWeek = () => {
         // Trigger generic fetch which populates lastWeekSchedules
-        fetchLastWeekSchedules();
+        fetchLastWeekSchedules(targetUserId);
     };
 
     // Effect for handling last week copy logic (legacy logic replication)
@@ -424,7 +473,7 @@ function TimeTable() {
                     <input type="checkbox" checked={startWithMonday} onChange={(e) => {
                         setStartWithMonday(e.target.checked);
                         localStorage.setItem('startWithMonday', e.target.checked);
-                        fetchScheduleByDate(currentStartDay);
+                        fetchScheduleByDate(currentStartDay, targetUserId);
                     }} />
 
                     <button onClick={() => setIsSubjectPaletteOpen(!isSubjectPaletteOpen)} className="edit-button">
@@ -458,6 +507,22 @@ function TimeTable() {
                         {t('updateSchedule')}
                     </button>
 
+                    {/* Student Selector */}
+                    {myStudents.length > 0 && (
+                        <select
+                            value={selectedStudentId}
+                            onChange={handleStudentChange}
+                            style={{ padding: '5px', borderRadius: '4px', border: '1px solid #ccc' }}
+                        >
+                            <option value="">{t('My TimeTable')}</option>
+                            {myStudents.map(student => (
+                                <option key={student.user_id} value={student.user_id}>
+                                    {student.username}
+                                </option>
+                            ))}
+                        </select>
+                    )}
+
                     <button onClick={handleCopyLastWeek} className="edit-button" style={{ backgroundColor: '#2196F3' }}>
                         {t('copyLastWeek')}
                     </button>
@@ -471,7 +536,7 @@ function TimeTable() {
                         const newDate = new Date(currentStartDay);
                         newDate.setDate(newDate.getDate() - 7);
                         setCurrentStartDay(newDate);
-                        fetchScheduleByDate(newDate);
+                        fetchScheduleByDate(newDate, targetUserId);
                     }} style={{ border: 'none', background: 'none', cursor: 'pointer', fontSize: '20px' }}>◀</button>
 
                     <span>
@@ -482,11 +547,11 @@ function TimeTable() {
                         const newDate = new Date(currentStartDay);
                         newDate.setDate(newDate.getDate() + 7);
                         setCurrentStartDay(newDate);
-                        fetchScheduleByDate(newDate);
+                        fetchScheduleByDate(newDate, targetUserId);
                     }} style={{ border: 'none', background: 'none', cursor: 'pointer', fontSize: '20px' }}>▶</button>
                 </div>
                 <button
-                    onClick={() => { setCurrentStartDaywithToday(); fetchScheduleByDate(currentStartDay); }}
+                    onClick={() => { setCurrentStartDaywithToday(); fetchScheduleByDate(currentStartDay, targetUserId); }}
                     style={{ fontSize: '14px', padding: '3px 8px', borderRadius: '4px', border: 'none', marginTop: '5px' }}
                 >
                     {t('thisWeek')}

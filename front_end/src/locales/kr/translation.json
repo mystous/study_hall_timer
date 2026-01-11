@@ -38,8 +38,31 @@
     "login": "로그인",
     "logout": "로그아웃",
     "admin": "관리자용 페이지",
-    "subjects": "과목 관리"
+    "subjects": "과목 관리",
+    "observer": "관찰자 관리"
   },
+  "Observer Management": "관찰자 관리",
+  "My Students (I am Guardian)": "나의 학생들 (보호자)",
+  "My Observers (I am Student)": "나의 관찰자 (학생)",
+  "Add Student": "학생 추가",
+  "Enter student username": "학생 아이디 입력",
+  "Send Request": "요청 보내기",
+  "My Students": "나의 학생들",
+  "View TimeTable": "시간표 보기",
+  "View Statistics": "통계 보기",
+  "Remove": "삭제",
+  "Sent Requests": "보낸 요청",
+  "Cancel": "취소",
+  "Pending Requests": "받은 요청 (대기중)",
+  "Accept": "승인",
+  "Reject": "거절",
+  "My Observers": "나의 관찰자",
+  "No students found.": "학생이 없습니다.",
+  "No sent requests.": "보낸 요청이 없습니다.",
+  "No pending requests.": "대기중인 요청이 없습니다.",
+  "No observers found.": "관찰자가 없습니다.",
+  "Request sent": "요청을 보냈습니다.",
+  "Are you sure?": "정말 삭제하시겠습니까?",
   "logo": {
     "alt": "로고"
   },
@@ -141,5 +164,15 @@
     "add": "과목 추가",
     "edit": "과목 수정",
     "delete": "과목 삭제"
-  }
+  },
+  "My TimeTable": "내 시간표",
+  "Confirm Deletion": "삭제 확인",
+  "Confirm Removal": "삭제 확인",
+  "Relation removed": "{{name}}님과의 관계가 삭제되었습니다.",
+  "Request rejected": "{{name}}님의 요청이 거절되었습니다.",
+  "Request accepted": "{{name}}님의 요청이 승인되었습니다.",
+  "subjectCreated": "과목이 생성되었습니다.",
+  "serverConnectionFailed": "서버 연결에 실패했습니다.",
+  "deleted": "삭제되었습니다.",
+  "delete": "삭제"
 }

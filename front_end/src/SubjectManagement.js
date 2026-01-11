@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { toast } from 'react-toastify';
 import './css/SubjectManagement.css';
 import { useAuth } from './common/AuthContext';
+import ConfirmationDialog from './ConfirmationDialog';
 
 const SubjectManagement = () => {
     const { t } = useTranslation();
@@ -21,6 +22,18 @@ const SubjectManagement = () => {
 
     const [isEditingSubject, setIsEditingSubject] = useState(null);
     const [isEditingCategory, setIsEditingCategory] = useState(null);
+
+    // Confirmation Dialog State
+    const [confirmDialog, setConfirmDialog] = useState({
+        isOpen: false,
+        title: '',
+        message: '',
+        onConfirm: null
+    });
+
+    const closeConfirmDialog = () => {
+        setConfirmDialog(prev => ({ ...prev, isOpen: false }));
+    };
 
     useEffect(() => {
         fetchData();
@@ -102,9 +115,16 @@ const SubjectManagement = () => {
         }
     };
 
-    const handleDeleteCategory = async (id, name) => {
-        if (!window.confirm(t('deleteCategoryConfirm', { category: name }))) return;
+    const handleDeleteCategoryClick = (id, name) => {
+        setConfirmDialog({
+            isOpen: true,
+            title: t('Confirm Deletion'),
+            message: t('deleteCategoryConfirm', { category: name }),
+            onConfirm: () => handleDeleteCategory(id)
+        });
+    };
 
+    const handleDeleteCategory = async (id) => {
         try {
             const response = await fetch(`${process.env.REACT_APP_BACKEND_URL}/api/v1/categories/${id}`, {
                 method: 'DELETE',
@@ -112,13 +132,15 @@ const SubjectManagement = () => {
             });
             const data = await response.json();
             if (data.success) {
-                toast.success(t('saved'));
+                toast.success(t('deleted'));
                 fetchCategories();
             } else {
                 toast.error(data.message);
             }
         } catch (error) {
             toast.error('Error deleting category');
+        } finally {
+            closeConfirmDialog();
         }
     };
 
@@ -161,9 +183,16 @@ const SubjectManagement = () => {
         }
     };
 
-    const handleDeleteSubject = async (id, name) => {
-        if (!window.confirm(t('deleteScheduleConfirm', { subject: name }))) return;
+    const handleDeleteSubjectClick = (id, name) => {
+        setConfirmDialog({
+            isOpen: true,
+            title: t('Confirm Deletion'),
+            message: t('deleteScheduleConfirm', { subject: name }),
+            onConfirm: () => handleDeleteSubject(id)
+        });
+    };
 
+    const handleDeleteSubject = async (id) => {
         try {
             const response = await fetch(`${process.env.REACT_APP_BACKEND_URL}/api/v1/subjects/${id}`, {
                 method: 'DELETE',
@@ -171,13 +200,15 @@ const SubjectManagement = () => {
             });
             const data = await response.json();
             if (data.success) {
-                toast.success(t('saved'));
+                toast.success(t('deleted'));
                 fetchSubjects();
             } else {
                 toast.error(data.message);
             }
         } catch (error) {
             toast.error('Error deleting subject');
+        } finally {
+            closeConfirmDialog();
         }
     };
 
@@ -276,7 +307,7 @@ const SubjectManagement = () => {
                             <button
                                 className="management-btn delete-btn"
                                 style={{ marginLeft: '5px' }}
-                                onClick={() => handleDeleteCategory(category.category_id, category.category_name)}
+                                onClick={() => handleDeleteCategoryClick(category.category_id, category.category_name)}
                             >
                                 {t('menu.delete')}
                             </button>
@@ -384,7 +415,7 @@ const SubjectManagement = () => {
                             <button
                                 className="management-btn delete-btn"
                                 style={{ marginLeft: '5px' }}
-                                onClick={() => handleDeleteSubject(subject.subject_id, subject.subjectname)}
+                                onClick={() => handleDeleteSubjectClick(subject.subject_id, subject.subjectname)}
                             >
                                 {t('menu.delete')}
                             </button>
@@ -392,6 +423,16 @@ const SubjectManagement = () => {
                     ))}
                 </div>
             </section>
+
+            <ConfirmationDialog
+                isOpen={confirmDialog.isOpen}
+                title={confirmDialog.title}
+                message={confirmDialog.message}
+                onConfirm={confirmDialog.onConfirm}
+                onCancel={closeConfirmDialog}
+                confirmLabel={t('delete')}
+                isDanger={true}
+            />
         </div>
     );
 };

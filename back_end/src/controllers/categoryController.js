@@ -1,20 +1,41 @@
-const { Categories, User, StudySubjects } = require('../database');
+const { Categories, User, StudySubjects, ObserverRelation } = require('../database');
 const { addRequestLog } = require('../utils/utils');
+const db = require('../db_operation');
 
-exports.getCategories = async (req, res) => {
+const getCategories = async (req, res) => {
+    let userId = req.user.user_id;
+    const requestedUserId = req.query.userId;
+
     try {
-        const user = await User.findOne({ where: { username: req.user.username } });
-        if (!user) {
-            return res.status(404).json({ success: false, message: 'User not found' });
+        if (requestedUserId && parseInt(requestedUserId) !== userId) {
+            const isGuardian = await ObserverRelation.findOne({
+                where: {
+                    student_id: requestedUserId,
+                    guardian_id: userId,
+                    status: 'accepted'
+                }
+            });
+            if (!isGuardian) {
+                return res.status(403).json({ success: false, message: 'Permission denied.' });
+            }
+            userId = requestedUserId;
         }
-        const categories = await Categories.findAll({ where: { user_id: user.user_id } });
-        addRequestLog(req, res, 'get_categories', req.user.username, true);
-        res.json({ success: true, categories });
+
+        const categories = await db.getCategories(userId); // Assuming db_operation has getCategories
+        addRequestLog(req, res, 'categories', '', true);
+        res.json({
+            success: true,
+            categories: categories
+        });
     } catch (error) {
-        addRequestLog(req, res, 'get_categories', req.user.username, false, error.message);
-        res.status(500).json({ success: false, message: 'Server error' });
+        addRequestLog(req, res, 'categories', '', false, error.message);
+        res.status(500).json({
+            success: false,
+            message: error.message
+        });
     }
 };
+exports.getCategories = getCategories;
 
 exports.createCategory = async (req, res) => {
     try {

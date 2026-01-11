@@ -117,12 +117,36 @@
   },
   "edit": {
     "title": "Edit",
+    "subjects": "Subjects",
+    "observer": "Observers",
     "subject": "Subject",
     "time": "Time",
     "invalidTime": "Time must be at least 1 minute.",
     "start_time": "Start Time",
     "subject_name": "Subject Name"
   },
+  "Observer Management": "Observer Management",
+  "My Students (I am Guardian)": "My Students (I am Guardian)",
+  "My Observers (I am Student)": "My Observers (I am Student)",
+  "Add Student": "Add Student",
+  "Enter student username": "Enter student username",
+  "Send Request": "Send Request",
+  "My Students": "My Students",
+  "View TimeTable": "View TimeTable",
+  "View Statistics": "View Statistics",
+  "Remove": "Remove",
+  "Sent Requests": "Sent Requests",
+  "Cancel": "Cancel",
+  "Pending Requests": "Pending Requests",
+  "Accept": "Accept",
+  "Reject": "Reject",
+  "My Observers": "My Observers",
+  "No students found.": "No students found.",
+  "No sent requests.": "No sent requests.",
+  "No pending requests.": "No pending requests.",
+  "No observers found.": "No observers found.",
+  "Request sent": "Request sent",
+  "Are you sure?": "Are you sure?",
   "daily": {
     "noSchedules": "No study schedules registered."
   },
@@ -140,5 +164,6 @@
     "add": "Add Subject",
     "edit": "Edit Subject",
     "delete": "Delete Subject"
-  }
+  },
+  "My TimeTable": "My TimeTable"
 }

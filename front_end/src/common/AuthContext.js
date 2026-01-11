@@ -83,8 +83,75 @@ export const AuthProvider = ({ children }) => {
     }
   }, []);
 
-  // useEffect를 사용하여 `groups` 상태가 변경될 때마다 `localStorage`에 저장
+  const refreshAccessToken = async () => {
+    const refreshToken = localStorage.getItem('refreshToken');
+    if (!refreshToken) {
+      logout();
+      return false;
+    }
 
+    try {
+      const response = await fetch(`${process.env.REACT_APP_BACKEND_URL}/api/v1/auth/refresh`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ refreshToken }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Refresh failed');
+      }
+
+      const data = await response.json();
+      if (data.success) {
+        localStorage.setItem('accessToken', data.accessToken);
+        // Optionally update user state if needed, but usually just token is enough for implicit auth
+        return true;
+      } else {
+        throw new Error(data.message);
+      }
+    } catch (error) {
+      console.error('Failed to refresh token', error);
+      logout();
+      return false;
+    }
+  };
+
+  useEffect(() => {
+    // Silent Refresh Logic
+    const checkTokenAndRefresh = async () => {
+      const accessToken = localStorage.getItem('accessToken');
+      if (!accessToken) return;
+
+      try {
+        const base64Url = accessToken.split('.')[1];
+        const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+        const jsonPayload = decodeURIComponent(atob(base64).split('').map(c => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2)).join(''));
+        const payload = JSON.parse(jsonPayload);
+
+        // Token expiry time in seconds
+        const exp = payload.exp;
+        const now = Math.floor(Date.now() / 1000);
+
+        // Refresh if expires in less than 5 minutes
+        if (exp - now < 300) {
+          await refreshAccessToken();
+        }
+      } catch (e) {
+        // If decoding failed, token might be invalid, try refresh
+        await refreshAccessToken();
+      }
+    };
+
+    // Check immediately on mount
+    checkTokenAndRefresh();
+
+    // Check periodically (e.g. every 1 minute)
+    const intervalId = setInterval(checkTokenAndRefresh, 60 * 1000);
+
+    return () => clearInterval(intervalId);
+  }, []);
 
   const value = {
     user,

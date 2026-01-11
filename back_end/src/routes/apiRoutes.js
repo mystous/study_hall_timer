@@ -10,8 +10,9 @@ const categoryController = require('../controllers/categoryController');
 const { validateAuthHeader } = require('../middlewares/authMiddleware');
 const { validateLogin } = require('../middlewares/validationMiddleware');
 
-// Public Routes
-router.post('/login', validateLogin, authController.login);
+// Auth routes
+router.post('/auth/login', authController.login);
+router.post('/auth/refresh', authController.refresh);
 
 // Protected Routes - User
 router.get('/user/user_groups', validateAuthHeader, userController.getUserGroups);

@@ -29,8 +29,29 @@ const login = async (req, res) => {
             message: error.message || 'Server error occurred.'
         });
     }
+}
+
+const refresh = async (req, res) => {
+    const { refreshToken } = req.body;
+    try {
+        const result = await authService.refreshToken(refreshToken);
+
+        addRequestLog(req, res, 'refresh', '', true);
+
+        res.json({
+            success: true,
+            accessToken: result.accessToken
+        });
+    } catch (error) {
+        addRequestLog(req, res, 'refresh', '', false, 'Refresh error:' + error.message);
+        res.status(401).json({
+            success: false,
+            message: error.message || 'Invalid refresh token.'
+        });
+    }
 };
 
 module.exports = {
-    login
+    login,
+    refresh
 };

@@ -28,7 +28,7 @@ const login = async (username, password) => {
     const refreshToken = jwt.sign(
         { username: username },
         JWT_SECRET,
-        { expiresIn: '14d' }
+        { expiresIn: '1d' }
     );
 
     // Save tokens
@@ -43,11 +43,36 @@ const login = async (username, password) => {
     return { accessToken, refreshToken, user };
 };
 
+const refreshToken = async (token) => {
+    try {
+        const decoded = jwt.verify(token, JWT_SECRET);
+        const username = decoded.username;
+
+        const tokenEntry = await Token.findOne({ where: { username, refresh_token: token } });
+        if (!tokenEntry) {
+            throw new Error('Invalid refresh token.');
+        }
+
+        const accessToken = jwt.sign(
+            { username: username },
+            JWT_SECRET,
+            { expiresIn: '1h' }
+        );
+
+        await Token.update({ access_token: accessToken }, { where: { username } });
+
+        return { accessToken };
+    } catch (error) {
+        throw new Error('Invalid or expired refresh token.');
+    }
+};
+
 const getUser = async (username) => {
     return await User.findOne({ where: { username } });
 };
 
 module.exports = {
     login,
+    refreshToken,
     getUser
 };

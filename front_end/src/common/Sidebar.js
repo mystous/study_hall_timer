@@ -52,6 +52,7 @@ const Sidebar = ({ isMenuVisible, setIsMenuVisible }) => {
                                 <li onClick={() => navigate('/daily')}>{t('nav.daily')}</li>
                                 <li onClick={() => navigate('/statistics')}>{t('nav.statistics')}</li>
                                 <li onClick={() => navigate('/personalinfo')}>{t('nav.personalinfo')}</li>
+                                <li onClick={() => navigate('/subjects')}>{t('nav.subjects')}</li>
                             </>
                         )}
                         {isAdmin() && (

@@ -36,7 +36,8 @@
     "about": "About",
     "login": "Login",
     "logout": "Logout",
-    "admin": "Admin Page"
+    "admin": "Admin Page",
+    "subjects": "Manage Subjects"
   },
   "logo": {
     "alt": "logo"
@@ -129,5 +130,15 @@
     "title": "Subject List"
   },
   "fillAllFields": "Please fill in all fields.",
-  "subjectName": "Subject Name"
+  "subjectName": "Subject Name",
+  "manageSubjects": "Manage Subjects",
+  "manageCategories": "Manage Categories",
+  "categoryName": "Category Name",
+  "addCategory": "Add Category",
+  "deleteCategoryConfirm": "Delete category {{category}}? This will fail if subjects use this category.",
+  "subject": {
+    "add": "Add Subject",
+    "edit": "Edit Subject",
+    "delete": "Delete Subject"
+  }
 }

@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import { getContrastColor } from './common/utils';
 import { Link, useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'react-toastify';
@@ -529,6 +530,7 @@ function TimeTable() {
                                                             width: '80%',
                                                             height: `${heightPixels}px`,
                                                             backgroundColor: schedule.study_subject.color,
+                                                            color: getContrastColor(schedule.study_subject.color),
                                                             fontSize: '12px',
                                                             overflow: 'hidden',
                                                             borderRadius: '4px',

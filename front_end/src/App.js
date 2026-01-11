@@ -19,6 +19,7 @@ import Admin from './Admin';
 import { TimeTableProvider, useTimeTable } from './contexts/TimeTableContext';
 import Daily from './Daily';
 import Sidebar from './common/Sidebar';
+import SubjectManagement from './SubjectManagement';
 
 function AppContent() {
   const navigate = useNavigate();
@@ -109,6 +110,11 @@ function AppContent() {
           <Route path="/logout" element={
             <ProtectedRoute>
               <Logout />
+            </ProtectedRoute>
+          } />
+          <Route path="/subjects" element={
+            <ProtectedRoute>
+              <SubjectManagement />
             </ProtectedRoute>
           } />
           <Route path="/about" element={<About />} />

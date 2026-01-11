@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
+import { getContrastColor } from './common/utils';
 import { useTranslation } from 'react-i18next';
 import './css/Dialogs.css'; // Import new styles
 
@@ -259,6 +260,7 @@ const SubjectItem = ({ subject, getHeight, getTimeText, setSubjectInfo }) => {
                 margin: '2.5px',
                 height: `${getHeight(subject.unit_time) / 2}px`,
                 background: subject.color || '#f0f0f0',
+                color: getContrastColor(subject.color || '#f0f0f0'),
                 borderRadius: '2px',
                 cursor: 'move',
                 border: '1px solid gray',

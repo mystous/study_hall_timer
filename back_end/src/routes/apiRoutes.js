@@ -4,7 +4,8 @@ const authController = require('../controllers/authController');
 const adminController = require('../controllers/adminController');
 const timeTableController = require('../controllers/timeTableController');
 const userController = require('../controllers/userController');
-// const subjectController = require('../controllers/subjectController'); (Not implemented yet, but placeholders)
+const subjectController = require('../controllers/subjectController');
+const categoryController = require('../controllers/categoryController');
 
 const { validateAuthHeader } = require('../middlewares/authMiddleware');
 const { validateLogin } = require('../middlewares/validationMiddleware');
@@ -27,62 +28,17 @@ router.put('/time_table', validateAuthHeader, timeTableController.updateSchedule
 router.delete('/time_table', validateAuthHeader, timeTableController.deleteSchedule);
 
 
-// Protected Routes - Subjects (Legacy wrappers or need specific controller?)
-// app.get('/api/v1/subjects') -> subjectController.getSubjects
-// app.post('/api/v1/subjects') -> subjectController.createSubject
+// Protected Routes - Subjects
+router.get('/subjects', validateAuthHeader, subjectController.getSubjects);
+router.post('/subjects', validateAuthHeader, subjectController.createSubject);
+router.put('/subjects/:id', validateAuthHeader, subjectController.updateSubject);
+router.delete('/subjects/:id', validateAuthHeader, subjectController.deleteSubject);
 
-const { User, StudySubjects, Categories } = require('../database');
-const { addRequestLog } = require('../utils/utils');
-
-// Quick Subject Controller Implementation Inline or Move later
-router.get('/subjects', validateAuthHeader, async (req, res) => {
-    try {
-        const user = await User.findOne({ where: { username: req.user.username } });
-        const subjects = await StudySubjects.findAll({
-            where: { user_id: user.user_id },
-            include: [Categories]
-        });
-        addRequestLog(req, res, 'subjects', req.user.username, true);
-        res.json({ success: true, subjects });
-    } catch (error) {
-        addRequestLog(req, res, 'subjects', req.user.username, false, error.message);
-        res.status(500).json({ success: false, message: 'Server error' });
-    }
-});
-
-router.post('/subjects', validateAuthHeader, async (req, res) => {
-    try {
-        const { subject_name, category_id, subject_color, subject_unit_time } = req.body;
-        const user = await User.findOne({ where: { username: req.user.username } });
-
-        const newSubject = await StudySubjects.create({
-            user_id: user.user_id,
-            subjectname: subject_name,
-            category_id: category_id,
-            color: subject_color,
-            unit_time: subject_unit_time,
-            visibility_level_id: 1 // Default
-        });
-
-        addRequestLog(req, res, 'create_subject', req.user.username, true);
-        res.json({ success: true, subject_id: newSubject.subject_id });
-    } catch (error) {
-        addRequestLog(req, res, 'create_subject', req.user.username, false, error.message);
-        res.status(500).json({ success: false, message: 'Server error' });
-    }
-});
-
-router.get('/categories', validateAuthHeader, async (req, res) => {
-    try {
-        const user = await User.findOne({ where: { username: req.user.username } });
-        const categories = await Categories.findAll({ where: { user_id: user.user_id } });
-        addRequestLog(req, res, 'get_categories', req.user.username, true);
-        res.json({ success: true, categories });
-    } catch (error) {
-        addRequestLog(req, res, 'get_categories', req.user.username, false, error.message);
-        res.status(500).json({ success: false, message: 'Server error' });
-    }
-});
+// Protected Routes - Categories
+router.get('/categories', validateAuthHeader, categoryController.getCategories);
+router.post('/categories', validateAuthHeader, categoryController.createCategory);
+router.put('/categories/:id', validateAuthHeader, categoryController.updateCategory);
+router.delete('/categories/:id', validateAuthHeader, categoryController.deleteCategory);
 
 // Test
 router.get('/test', (req, res) => {
